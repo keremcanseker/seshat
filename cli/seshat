@@ -1,0 +1,105 @@
+#!/bin/sh
+# Seshat CLI — opens markdown files in the Seshat reader.
+# Bundled inside Seshat.app/Contents/Resources/seshat and symlinked into PATH.
+
+set -e
+
+usage() {
+    cat >&2 <<EOF
+seshat — native macOS markdown reader
+
+usage:
+  seshat open <file.md>       Open a file in a reader window
+  seshat global [<file.md>]   Open the workspace (and copy file into Inbox if given)
+  seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)
+  seshat help                 Show this message
+EOF
+}
+
+abs_path() {
+    case "$1" in
+        /*) printf %s "$1" ;;
+        *)  printf %s "$(pwd)/$1" ;;
+    esac
+}
+
+# Minimal URL encoding for the most common path-breaking characters.
+# Encodes % first so we don't double-escape.
+url_encode() {
+    printf %s "$1" | sed \
+        -e 's|%|%25|g' \
+        -e 's| |%20|g' \
+        -e 's|#|%23|g' \
+        -e 's|?|%3F|g' \
+        -e 's|&|%26|g'
+}
+
+cmd="${1:-}"
+[ -z "$cmd" ] && { usage; exit 1; }
+shift || true
+
+case "$cmd" in
+    open)
+        if [ -z "${1:-}" ]; then
+            echo "seshat open: missing <file.md>" >&2
+            exit 1
+        fi
+        if [ ! -f "$1" ]; then
+            echo "seshat: file not found: $1" >&2
+            exit 1
+        fi
+        abs="$(abs_path "$1")"
+        encoded="$(url_encode "$abs")"
+        open "seshat://open?path=$encoded"
+        ;;
+
+    global)
+        if [ -n "${1:-}" ]; then
+            if [ ! -f "$1" ]; then
+                echo "seshat: file not found: $1" >&2
+                exit 1
+            fi
+            mkdir -p "$HOME/Seshat/Inbox"
+            target="$HOME/Seshat/Inbox/$(basename "$1")"
+            cp "$1" "$target"
+            encoded="$(url_encode "$target")"
+            open "seshat://global?path=$encoded"
+        else
+            open "seshat://global"
+        fi
+        ;;
+
+    install)
+        target="${1:-/usr/local/bin/seshat}"
+        app="$(mdfind "kMDItemCFBundleIdentifier == 'com.keremcan.seshat'" 2>/dev/null | head -n 1)"
+        if [ -z "$app" ]; then
+            echo "seshat: Seshat.app not found via Spotlight." >&2
+            echo "Open Seshat at least once (move it to /Applications if possible), then retry." >&2
+            exit 1
+        fi
+        bin="$app/Contents/Resources/seshat"
+        if [ ! -f "$bin" ]; then
+            echo "seshat: CLI binary missing in $bin" >&2
+            exit 1
+        fi
+        target_dir="$(dirname "$target")"
+        mkdir -p "$target_dir" 2>/dev/null || true
+        if ln -sf "$bin" "$target" 2>/dev/null; then
+            echo "Installed: $target -> $bin"
+        else
+            echo "seshat: cannot write to $target_dir without permission." >&2
+            echo "Try: sudo ln -sf '$bin' '$target'" >&2
+            exit 1
+        fi
+        ;;
+
+    help|-h|--help)
+        usage
+        ;;
+
+    *)
+        echo "seshat: unknown command '$cmd'" >&2
+        usage
+        exit 1
+        ;;
+esac

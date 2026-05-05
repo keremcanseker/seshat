@@ -1,0 +1,71 @@
+{
+  "name": "seshat-vscode",
+  "displayName": "Seshat",
+  "description": "Open the current Markdown file in the Seshat reader.",
+  "version": "0.1.0",
+  "publisher": "keremcan",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "seshat.openInReader",
+        "title": "Open in Seshat",
+        "category": "Seshat",
+        "icon": "$(book)"
+      },
+      {
+        "command": "seshat.openInWorkspace",
+        "title": "Reveal in Seshat Workspace",
+        "category": "Seshat"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "seshat.openInReader",
+          "when": "resourceLangId == markdown && resourceScheme == file",
+          "group": "navigation@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "seshat.openInReader",
+          "when": "resourceLangId == markdown && resourceScheme == file",
+          "group": "navigation@50"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "seshat.openInReader",
+          "when": "resourceLangId == markdown && resourceScheme == file"
+        },
+        {
+          "command": "seshat.openInWorkspace",
+          "when": "resourceLangId == markdown && resourceScheme == file"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
