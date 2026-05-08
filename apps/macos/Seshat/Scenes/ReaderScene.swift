@@ -15,8 +15,8 @@ private struct ReaderRoot: View {
     let fileURL: URL?
 
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismissWindow) private var dismissWindow
     @Environment(AppRouter.self) private var router
+    @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
 
     var body: some View {
         Group {
@@ -26,6 +26,7 @@ private struct ReaderRoot: View {
                 EmptyReaderView()
             }
         }
+        .preferredColorScheme(appearance.colorScheme)
         .frame(minWidth: 520, minHeight: 360)
         .background(
             WindowAccessor { window in
@@ -36,7 +37,7 @@ private struct ReaderRoot: View {
         )
         .onAppear {
             seshatLog("ReaderRoot.onAppear — fileURL=\(fileURL?.lastPathComponent ?? "nil")")
-            router.bind(openWindow: openWindow, dismissWindow: dismissWindow)
+            router.bind(openWindow: openWindow)
         }
     }
 }

@@ -5,17 +5,14 @@ import SwiftUI
 @MainActor
 final class AppRouter {
     var workspaceTarget: URL?
-    private(set) var workspaceExplicitlyRequested = false
 
     private var openWindow: OpenWindowAction?
-    private var dismissWindow: DismissWindowAction?
     private var pending: [URL] = []
     private var readerWindows: [ObjectIdentifier: ReaderEntry] = [:]
 
-    func bind(openWindow: OpenWindowAction, dismissWindow: DismissWindowAction) {
+    func bind(openWindow: OpenWindowAction) {
         guard self.openWindow == nil else { return }
         self.openWindow = openWindow
-        self.dismissWindow = dismissWindow
         let queued = pending
         pending.removeAll()
         seshatLog("AppRouter.bind — flushing \(queued.count) queued URL(s)")
@@ -50,25 +47,15 @@ final class AppRouter {
                 seshatLog("AppRouter.handle — focus existing reader \(fileURL.lastPathComponent)")
                 existing.makeKeyAndOrderFront(nil)
                 NSApp.activate(ignoringOtherApps: true)
-                dismissWelcome()
                 return
             }
             seshatLog("AppRouter.handle — openWindow(value:) \(fileURL.lastPathComponent)")
             openWindow(value: fileURL)
-            dismissWelcome()
         case .openWorkspace(let fileURL):
             workspaceTarget = fileURL
-            workspaceExplicitlyRequested = true
             seshatLog("AppRouter.handle — openWindow(id: workspace)")
-            openWindow(id: "workspace")
-            dismissWelcome()
+            openWindow(id: WorkspaceScene.id)
         }
-    }
-
-    private func dismissWelcome() {
-        guard let dismissWindow else { return }
-        seshatLog("AppRouter.dismissWelcome — dismissing")
-        dismissWindow(id: WelcomeScene.id)
     }
 
     private func liveReaderWindow(for url: URL) -> NSWindow? {

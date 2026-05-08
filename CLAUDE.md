@@ -4,6 +4,8 @@ Native macOS markdown reader with a CLI. Renders `.md` files with calm, Notion-g
 
 > **Name origin:** Seshat is the Egyptian goddess of writing, scribes, and libraries — "Mistress of the House of Books." Pick names that fit this vibe; avoid generic "MD" / "Markdown" branding. Placeholder name was `MDPump`; do not let that leak back in.
 
+> **Vision and philosophy live in [README.md](README.md).** Read it before doing any design, copy, or product-shaped work — it explains *why* this project exists (long markdown is unpleasant to read in dev tools; sharing it is fiddly), the two product surfaces (local reader today, `seshat share` link layer next), the scholarly-library philosophy, and what Seshat explicitly is *not* (not a PKM, not an editor yet, not a wiki, not configurable). When briefing a design agent, hand them README.md as the brief; this file is the engineering companion.
+
 ---
 
 ## Repository layout

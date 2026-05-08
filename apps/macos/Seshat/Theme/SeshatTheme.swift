@@ -11,9 +11,9 @@ extension Theme {
         }
         .code {
             FontFamilyVariant(.monospaced)
-            FontSize(.em(0.88))
-            ForegroundColor(.seshatCodeText)
-            BackgroundColor(.seshatCodeBg)
+            FontSize(.em(0.875))
+            ForegroundColor(.seshatBodyText)
+            BackgroundColor(.seshatBgSubtle)
         }
         .strong {
             FontWeight(.semibold)
@@ -27,7 +27,7 @@ extension Theme {
         }
         .heading1 { configuration in
             configuration.label
-                .markdownMargin(top: 32, bottom: 18)
+                .markdownMargin(top: 32, bottom: 8)
                 .markdownTextStyle {
                     FontFamily(.system(.serif))
                     FontWeight(.bold)
@@ -38,7 +38,7 @@ extension Theme {
         }
         .heading2 { configuration in
             configuration.label
-                .markdownMargin(top: 32, bottom: 14)
+                .markdownMargin(top: 40, bottom: 12)
                 .markdownTextStyle {
                     FontFamily(.system(.serif))
                     FontWeight(.bold)
@@ -49,7 +49,7 @@ extension Theme {
         }
         .heading3 { configuration in
             configuration.label
-                .markdownMargin(top: 26, bottom: 10)
+                .markdownMargin(top: 32, bottom: 10)
                 .markdownTextStyle {
                     FontFamily(.system(.serif))
                     FontWeight(.semibold)
@@ -95,39 +95,47 @@ extension Theme {
         .paragraph { configuration in
             configuration.label
                 .relativeLineSpacing(.em(0.4))
-                .markdownMargin(top: 0, bottom: 16)
+                .markdownMargin(top: 0, bottom: 18)
                 .frame(maxWidth: Seshat.proseWidth, alignment: .leading)
         }
         .blockquote { configuration in
             HStack(spacing: 0) {
                 Rectangle()
-                    .fill(Color.seshatBlockquoteRule)
-                    .frame(width: 3)
+                    .fill(Color.seshatAccent)
+                    .frame(width: 2)
                 configuration.label
-                    .padding(.leading, 16)
-                    .padding(.vertical, 2)
+                    .padding(.leading, 22)
+                    .padding(.vertical, 4)
                     .markdownTextStyle {
+                        FontFamily(.system(.serif))
                         FontStyle(.italic)
-                        ForegroundColor(.seshatMuted)
+                        FontSize(19)
+                        ForegroundColor(.seshatBodyText)
                     }
             }
             .frame(maxWidth: Seshat.proseWidth, alignment: .leading)
-            .markdownMargin(top: 16, bottom: 16)
+            .markdownMargin(top: 28, bottom: 28)
         }
         .codeBlock { configuration in
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 configuration.label
-                    .padding(20)
+                    .padding(.vertical, 18)
+                    .padding(.horizontal, 22)
                     .markdownTextStyle {
                         FontFamilyVariant(.monospaced)
-                        FontSize(13.5)
-                        ForegroundColor(.seshatCodeText)
+                        FontSize(14)
+                        ForegroundColor(.seshatBodyText)
                         BackgroundColor(nil)
                     }
             }
-            .background(Color.seshatCodeBg)
-            .clipShape(.rect(cornerRadius: 8))
-            .markdownMargin(top: 16, bottom: 16)
+            .scrollIndicators(.hidden)
+            .background(Color.seshatBgSubtle)
+            .clipShape(.rect(cornerRadius: 6))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.seshatRule, lineWidth: 0.5)
+            }
+            .markdownMargin(top: 22, bottom: 22)
         }
         .listItem { configuration in
             configuration.label
@@ -150,16 +158,16 @@ extension Theme {
             configuration.label
                 .fixedSize(horizontal: false, vertical: true)
                 .markdownTableBorderStyle(
-                    .init(.horizontalBorders, color: .seshatRule, width: 0.5)
+                    .init(.horizontalBorders, color: .seshatRuleStrong, width: 0.5)
                 )
                 .markdownTableBackgroundStyle(
                     .alternatingRows(
                         Color.clear,
-                        Color.seshatCodeBg.opacity(0.35),
+                        Color.seshatBgSubtle.opacity(0.5),
                         header: Color.clear
                     )
                 )
-                .markdownMargin(top: 16, bottom: 16)
+                .markdownMargin(top: 24, bottom: 24)
         }
         .tableCell { configuration in
             configuration.label
@@ -168,6 +176,8 @@ extension Theme {
                     if configuration.row == 0 {
                         FontWeight(.semibold)
                         ForegroundColor(.seshatHeading)
+                    } else {
+                        ForegroundColor(.seshatMuted)
                     }
                     BackgroundColor(nil)
                 }
@@ -178,8 +188,8 @@ extension Theme {
         .thematicBreak {
             Rectangle()
                 .fill(Color.seshatRule)
-                .frame(maxWidth: 280, maxHeight: 1)
-                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity, maxHeight: 0.5)
+                .padding(.vertical, 32)
         }
 }
 
@@ -192,26 +202,24 @@ private struct BulletMarker: View {
     let level: Int
 
     var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: size, weight: .regular))
-            .foregroundStyle(color)
-            .relativeFrame(minWidth: .em(1.5), alignment: .trailing)
-    }
-
-    private var symbol: String {
-        switch level {
-        case 1: "diamond.fill"
-        case 2: "diamond"
-        default: "circle.fill"
+        Group {
+            switch level {
+            case 1:
+                SeshatStar()
+                    .fill(Color.seshatAccent)
+                    .frame(width: 7, height: 7)
+            case 2:
+                SeshatStar()
+                    .stroke(Color.seshatMuted, lineWidth: 1)
+                    .frame(width: 7, height: 7)
+            default:
+                Circle()
+                    .fill(Color.seshatFaint)
+                    .frame(width: 4, height: 4)
+            }
         }
-    }
-
-    private var size: CGFloat {
-        level >= 3 ? 5 : 8
-    }
-
-    private var color: Color {
-        level == 1 ? .seshatBlockquoteRule : .seshatMuted
+        .relativeFrame(minWidth: .em(1.5), alignment: .trailing)
+        .padding(.trailing, 8)
     }
 }
 
@@ -219,9 +227,24 @@ private struct TaskMarker: View {
     let isCompleted: Bool
 
     var body: some View {
-        Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 14, weight: .regular))
-            .foregroundStyle(isCompleted ? Color.seshatBlockquoteRule : Color.seshatMuted)
+        RoundedRectangle(cornerRadius: 3)
+            .fill(isCompleted ? Color.seshatAccent : Color.clear)
+            .overlay {
+                RoundedRectangle(cornerRadius: 3)
+                    .strokeBorder(
+                        isCompleted ? Color.seshatAccent : Color.seshatRuleStrong,
+                        lineWidth: 1
+                    )
+            }
+            .overlay {
+                if isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.seshatPaper)
+                }
+            }
+            .frame(width: 12, height: 12)
             .relativeFrame(minWidth: .em(1.5), alignment: .trailing)
+            .padding(.trailing, 8)
     }
 }

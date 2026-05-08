@@ -1,11 +1,13 @@
 import SwiftUI
 
 struct WorkspaceScene: Scene {
+    static let id = "workspace"
+
     @State private var library = Library()
     @State private var selection: URL?
 
     var body: some Scene {
-        Window("Workspace", id: "workspace") {
+        Window("Seshat", id: Self.id) {
             WorkspaceRootContainer(
                 library: library,
                 selection: $selection
@@ -23,10 +25,12 @@ private struct WorkspaceRootContainer: View {
     @Binding var selection: URL?
 
     @Environment(AppRouter.self) private var router
-    @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.openWindow) private var openWindow
+    @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
 
     var body: some View {
         WorkspaceRoot(library: library, selection: $selection)
+            .preferredColorScheme(appearance.colorScheme)
             .background(WindowAccessor { window in
                 window?.isRestorable = false
             })
@@ -37,10 +41,8 @@ private struct WorkspaceRootContainer: View {
                 router.workspaceTarget = nil
             }
             .onAppear {
-                seshatLog("WorkspaceRootContainer.onAppear — explicit=\(router.workspaceExplicitlyRequested)")
-                if !router.workspaceExplicitlyRequested {
-                    dismissWindow(id: "workspace")
-                }
+                seshatLog("WorkspaceRootContainer.onAppear")
+                router.bind(openWindow: openWindow)
             }
             .task {
                 if let target = router.workspaceTarget {

@@ -9,8 +9,6 @@ struct SeshatApp: App {
     }
 
     var body: some Scene {
-        WelcomeScene()
-            .environment(appDelegate.router)
         WorkspaceScene()
             .environment(appDelegate.router)
         ReaderScene()

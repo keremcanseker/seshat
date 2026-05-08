@@ -1,5 +1,11 @@
 import Foundation
 
+private extension URL {
+    var modificationDate: Date? {
+        (try? resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+    }
+}
+
 @Observable
 @MainActor
 final class Library {
@@ -74,13 +80,30 @@ final class Library {
         let manager = FileManager.default
         guard let contents = try? manager.contentsOfDirectory(
             at: folder,
-            includingPropertiesForKeys: [.isRegularFileKey, .nameKey],
+            includingPropertiesForKeys: [.isRegularFileKey, .nameKey, .contentModificationDateKey],
             options: [.skipsHiddenFiles]
         ) else { return [] }
 
         return contents
             .filter { Library.markdownExtensions.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-            .map { LibraryFile(url: $0, name: $0.deletingPathExtension().lastPathComponent, folderName: folderName) }
+            .sorted { lhs, rhs in
+                let lDate = lhs.modificationDate
+                let rDate = rhs.modificationDate
+                switch (lDate, rDate) {
+                case (let l?, let r?): return l > r
+                case (.some, .none):   return true
+                case (.none, .some):   return false
+                case (.none, .none):
+                    return lhs.lastPathComponent.localizedStandardCompare(rhs.lastPathComponent) == .orderedAscending
+                }
+            }
+            .map { url in
+                LibraryFile(
+                    url: url,
+                    name: url.deletingPathExtension().lastPathComponent,
+                    folderName: folderName,
+                    modifiedAt: url.modificationDate
+                )
+            }
     }
 }

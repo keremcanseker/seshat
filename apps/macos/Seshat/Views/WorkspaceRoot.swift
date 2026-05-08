@@ -35,11 +35,21 @@ struct WorkspaceRoot: View {
 
 private struct EmptyDetail: View {
     var body: some View {
-        ContentUnavailableView {
-            Label("No document", systemImage: "doc.text")
-        } description: {
-            Text("Select a file from the sidebar.")
+        VStack(spacing: 18) {
+            SeshatMark(lineWidth: 1.6, color: .seshatFaint)
+                .frame(width: 56, height: 56)
+            VStack(spacing: 8) {
+                Text("No document selected")
+                    .font(.system(size: 16, weight: .medium, design: .serif))
+                    .foregroundStyle(Color.seshatMuted)
+                Text("Pick a file from the sidebar — or use `seshat open <file.md>` from the terminal.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.seshatFaint)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 340)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.seshatPaper)
     }
 }

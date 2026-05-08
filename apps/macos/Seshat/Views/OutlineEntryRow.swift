@@ -2,7 +2,8 @@ import SwiftUI
 
 struct OutlineEntryRow: View {
     let entry: OutlineEntry
-    let indent: CGFloat
+    let depth: Int
+    let isActive: Bool
     let onSelect: () -> Void
 
     @State private var isHovered = false
@@ -10,16 +11,18 @@ struct OutlineEntryRow: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 0) {
+                Rectangle()
+                    .fill(isActive ? Color.seshatAccent : Color.clear)
+                    .frame(width: 1.5)
                 Text(entry.title)
-                    .font(.system(size: 11, weight: entry.level == 1 ? .medium : .regular))
+                    .font(.system(size: 12, weight: depth == 0 ? .medium : .regular))
                     .foregroundStyle(textColor)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .padding(.leading, indent)
+                    .padding(.vertical, 2)
                 Spacer(minLength: 0)
             }
-            .padding(.leading, indent + 6)
-            .padding(.trailing, 6)
-            .padding(.vertical, 3)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -30,8 +33,21 @@ struct OutlineEntryRow: View {
         }
     }
 
+    private var indent: CGFloat {
+        switch depth {
+        case 0: 12.5
+        case 1: 22
+        default: 32
+        }
+    }
+
     private var textColor: Color {
-        if isHovered { return .seshatHeading }
-        return entry.level == 1 ? .seshatBodyText.opacity(0.7) : .seshatMuted.opacity(0.85)
+        if isActive { return .seshatAccent }
+        if isHovered { return .seshatBodyText }
+        switch depth {
+        case 0: return .seshatBodyText
+        case 1: return .seshatMuted
+        default: return .seshatFaint
+        }
     }
 }
