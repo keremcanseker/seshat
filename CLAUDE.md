@@ -19,8 +19,8 @@ md-share/                      # repo root (folder name is a leftover placeholde
 │   │   ├── project.yml        # xcodegen source-of-truth — edit this, never the .pbxproj
 │   │   ├── Seshat.xcodeproj   # generated, gitignored
 │   │   └── Seshat/            # all Swift sources, assets, Info.plist, entitlements
+│   ├── server/                # Bun + Hono share API, deployed via Coolify (Supabase Postgres)
 │   └── web/                   # FUTURE — separate React/Next app, no code reuse with macOS
-├── server/                    # FUTURE — backend on Hetzner (auth + storage + share links)
 ├── cli/
 │   └── seshat                 # POSIX shell shim, bundled into Seshat.app/Contents/Resources/seshat
 ├── samples/                   # markdown fixtures used during dev (e.g. stress.md)
