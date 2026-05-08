@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { env } from "./env";
+import { authRoute } from "./routes/auth";
 import { docsRoute } from "./routes/docs";
 import { healthRoute } from "./routes/health";
 
@@ -15,14 +16,16 @@ if (env.CORS_ORIGINS.length > 0) {
     "*",
     cors({
       origin: env.CORS_ORIGINS,
-      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
       allowHeaders: ["content-type", "authorization"],
+      credentials: true,
     }),
   );
 }
 
 app.get("/", (c) => c.json({ name: "seshat-server", version: "0.1.0" }));
 app.route("/health", healthRoute);
+app.route("/auth", authRoute);
 app.route("/docs", docsRoute);
 
 app.onError((err, c) => {
