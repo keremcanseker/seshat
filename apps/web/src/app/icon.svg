@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Seshat">
+  <title>Seshat</title>
+  <rect width="64" height="64" rx="14" fill="#fcfaf7"/>
+  <g
+    fill="none"
+    stroke="#2a2522"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- Headdress arc -->
+    <path d="M 17 14.4 Q 32 4 47 14.4"/>
+    <!-- Vertical staff -->
+    <path d="M 32 10.8 L 32 27.2"/>
+    <!-- Seven-pointed star, center (32, 43), outer r=16, inner r=6.4 -->
+    <path d="M 32 28 L 34.78 38.23 L 44.51 34.02 L 38.24 42.58 L 47.6 47.56 L 37 47.99 L 38.94 58.41 L 32 50.4 L 25.06 58.41 L 27 47.99 L 16.4 47.56 L 25.76 42.58 L 19.49 34.02 L 29.22 38.23 Z"/>
+  </g>
+</svg>
