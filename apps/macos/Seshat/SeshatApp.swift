@@ -11,7 +11,9 @@ struct SeshatApp: App {
     var body: some Scene {
         WorkspaceScene()
             .environment(appDelegate.router)
+            .environment(appDelegate.authStore)
         ReaderScene()
             .environment(appDelegate.router)
+            .environment(appDelegate.authStore)
     }
 }

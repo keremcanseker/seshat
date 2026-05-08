@@ -16,14 +16,17 @@ private struct ReaderRoot: View {
 
     @Environment(\.openWindow) private var openWindow
     @Environment(AppRouter.self) private var router
+    @Environment(AuthStore.self) private var authStore
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
 
     var body: some View {
         Group {
             if let fileURL {
                 MarkdownReader(fileURL: fileURL)
-            } else {
+            } else if authStore.isAuthenticated {
                 EmptyReaderView()
+            } else {
+                SignInView()
             }
         }
         .preferredColorScheme(appearance.colorScheme)

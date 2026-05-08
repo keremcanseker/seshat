@@ -5,10 +5,15 @@ import SwiftUI
 @MainActor
 final class AppRouter {
     var workspaceTarget: URL?
+    let authStore: AuthStore
 
     private var openWindow: OpenWindowAction?
     private var pending: [URL] = []
     private var readerWindows: [ObjectIdentifier: ReaderEntry] = [:]
+
+    init(authStore: AuthStore) {
+        self.authStore = authStore
+    }
 
     func bind(openWindow: OpenWindowAction) {
         guard self.openWindow == nil else { return }
@@ -36,6 +41,11 @@ final class AppRouter {
 
     private func handle(url: URL) {
         guard let action = SeshatURL.action(for: url) else { return }
+        if case .signInCallback(let token) = action {
+            authStore.handleCallback(token: token)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
         guard let openWindow else {
             pending.append(url)
             seshatLog("AppRouter.handle — not bound; queued: \(url)")
@@ -55,6 +65,8 @@ final class AppRouter {
             workspaceTarget = fileURL
             seshatLog("AppRouter.handle — openWindow(id: workspace)")
             openWindow(id: WorkspaceScene.id)
+        case .signInCallback:
+            break
         }
     }
 

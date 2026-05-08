@@ -2,12 +2,21 @@ import AppKit
 
 @MainActor
 final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
-    let router = AppRouter()
+    let authStore: AuthStore
+    let router: AppRouter
+
+    override init() {
+        let authStore = AuthStore()
+        self.authStore = authStore
+        self.router = AppRouter(authStore: authStore)
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let outputPath = exportIconsArgument(in: CommandLine.arguments) {
             exportIcons(to: outputPath)
         }
+        authStore.bootstrap()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
