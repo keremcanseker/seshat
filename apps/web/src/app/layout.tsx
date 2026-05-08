@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Newsreader, Inter, JetBrains_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -43,8 +44,18 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${newsreader.variable} ${inter.variable} ${mono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="bg-paper text-ink min-h-full font-sans">{children}</body>
+      <body className="bg-paper text-ink min-h-full font-sans">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          storageKey="seshat-theme"
+        >
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

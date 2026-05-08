@@ -57,7 +57,7 @@ docsRoute.post("/", requireUser, async (c) => {
       slug: row.slug,
       title: row.title,
       createdAt: row.createdAt,
-      url: `${env.PUBLIC_BASE_URL}/d/${row.slug}`,
+      url: `${env.WEB_BASE_URL}/d/${row.slug}`,
     },
     201,
   );

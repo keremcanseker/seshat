@@ -288,3 +288,642 @@
     background-size: 100% 2px;
   }
 }
+
+/*
+ * Seshat shared-doc renderer (/d/[slug]).
+ * Mirrors apps/macos/Seshat/Theme/SeshatTheme.swift — type scale, margins,
+ * 720px prose / 920px content widths, warm-gold accents, horizontal-only tables.
+ */
+:root {
+  --seshat-star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M14 0 L16.5 8.82 L24.95 5.27 L19.61 12.72 L27.65 17.12 L18.5 17.58 L20.07 26.61 L14 19.75 L7.93 26.61 L9.5 17.58 L0.35 17.12 L8.39 12.72 L3.05 5.27 L11.5 8.82 Z' fill='black'/%3E%3C/svg%3E");
+}
+
+/* Hide page scrollbar when viewing a shared doc — matches the macOS reader's
+   scrollIndicators(.never). Scroll still works, just no visible track. */
+html:has(.seshat-doc-page),
+body:has(.seshat-doc-page) {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html:has(.seshat-doc-page)::-webkit-scrollbar,
+body:has(.seshat-doc-page)::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@layer components {
+  .seshat-doc-page {
+    min-height: 100dvh;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  /* Fixed brand in top-left of viewport. */
+  .seshat-doc-brand-fixed {
+    position: fixed;
+    top: 22px;
+    left: 28px;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 6px 10px 6px 6px;
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    transition: opacity 160ms ease, background 160ms ease;
+  }
+
+  .seshat-doc-brand-fixed:hover {
+    background: color-mix(in oklab, var(--ink) 5%, transparent);
+  }
+
+  /* Fixed chrome on the right: toolbar + outline, flush right.
+     Mirrors apps/macos/Seshat/Views/MarkdownOutline.swift —
+     200pt panel, vertical spine, single-line entries, depth-driven indent. */
+  .seshat-doc-chrome {
+    position: fixed;
+    top: 22px;
+    right: 28px;
+    z-index: 40;
+    width: 200px;
+    max-width: calc(100vw - 48px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    pointer-events: none;
+  }
+
+  .seshat-doc-chrome > * {
+    pointer-events: auto;
+  }
+
+  .seshat-doc-chrome-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 7px;
+    background: color-mix(in oklab, var(--paper) 84%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border: 0.5px solid var(--rule);
+    align-self: flex-end;
+  }
+
+  .seshat-doc-chrome-button {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease;
+    padding: 0;
+  }
+
+  .seshat-doc-chrome-button:hover {
+    background: color-mix(in oklab, var(--ink) 7%, transparent);
+    color: var(--ink);
+  }
+
+  .seshat-doc-chrome-button.is-active {
+    background: color-mix(in oklab, var(--ink) 10%, transparent);
+    color: var(--ink);
+  }
+
+  .seshat-doc-chrome-outline {
+    width: 200px;
+    max-width: 100%;
+    max-height: calc(100dvh - 110px);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .seshat-doc-chrome-outline-label {
+    flex: 0 0 auto;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    margin: 0 0 10px;
+    padding-left: 14px;
+    text-align: left;
+  }
+
+  .seshat-doc-chrome-outline-list {
+    position: relative;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-left: 0.5px solid var(--rule-strong);
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .seshat-doc-chrome-outline-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .seshat-doc-chrome-outline-list li {
+    margin: 0;
+  }
+
+  .seshat-doc-chrome-outline-link {
+    position: relative;
+    display: block;
+    padding: 2px 12px 2px 0;
+    margin-left: -1px;
+    border-left: 1.5px solid transparent;
+    color: var(--ink-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 400;
+    text-decoration: none;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+
+  .seshat-doc-chrome-outline-link.is-d0 {
+    color: var(--ink);
+    font-weight: 500;
+    padding-left: 12.5px;
+  }
+
+  .seshat-doc-chrome-outline-link.is-d1 {
+    color: var(--ink-muted);
+    padding-left: 22px;
+  }
+
+  .seshat-doc-chrome-outline-link.is-d2 {
+    color: var(--ink-faint);
+    padding-left: 32px;
+  }
+
+  .seshat-doc-chrome-outline-link:hover {
+    color: var(--ink);
+  }
+
+  .seshat-doc-chrome-outline-link.is-active {
+    color: var(--gold);
+    border-left-color: var(--gold);
+  }
+
+  /* Hide outline on narrower screens; toolbar stays. */
+  @media (max-width: 1180px) {
+    .seshat-doc-chrome {
+      width: auto;
+    }
+    .seshat-doc-chrome-outline {
+      display: none;
+    }
+  }
+
+  .seshat-doc-page-footer {
+    display: flex;
+    justify-content: center;
+    padding: 56px 24px 80px;
+  }
+
+  .seshat-doc-page-footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink-faint);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+
+  .seshat-doc-page-footer-link:hover {
+    color: var(--ink-muted);
+  }
+
+  /* ── Article container ────────────────────────────────── */
+
+  .seshat-doc {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 96px 32px 96px;
+    font-family: var(--font-sans);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.65;
+    font-feature-settings: "kern", "liga", "calt";
+  }
+
+  @media (max-width: 640px) {
+    .seshat-doc {
+      padding: 72px 20px 72px;
+    }
+  }
+
+  /* Prose elements clamp to 720px; code blocks / tables go full 920px. */
+  .seshat-doc-h1,
+  .seshat-doc-h2,
+  .seshat-doc-h3,
+  .seshat-doc-h4,
+  .seshat-doc-h5,
+  .seshat-doc-h6,
+  .seshat-doc-p,
+  .seshat-doc-blockquote,
+  .seshat-doc-ul,
+  .seshat-doc-ol {
+    max-width: 720px;
+  }
+
+  /* ── Headings ─────────────────────────────────────────── */
+
+  .seshat-doc-h1,
+  .seshat-doc-h2,
+  .seshat-doc-h3,
+  .seshat-doc-h4,
+  .seshat-doc-h5,
+  .seshat-doc-h6 {
+    font-family: var(--font-heading);
+    color: var(--ink);
+    font-feature-settings: "kern", "liga", "dlig", "ss01";
+    letter-spacing: -0.01em;
+    scroll-margin-top: 88px;
+  }
+
+  .seshat-doc-h1 {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 32px 0 8px;
+  }
+
+  .seshat-doc-h2 {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 40px 0 12px;
+  }
+
+  .seshat-doc-h3 {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 32px 0 10px;
+  }
+
+  .seshat-doc-h4 {
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin: 22px 0 8px;
+    letter-spacing: -0.005em;
+  }
+
+  .seshat-doc-h5 {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    margin: 20px 0 6px;
+  }
+
+  .seshat-doc-h6 {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-transform: lowercase;
+    font-variant: small-caps;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    margin: 18px 0 6px;
+  }
+
+  /* ── Body text ────────────────────────────────────────── */
+
+  .seshat-doc-p {
+    margin: 0 0 18px;
+  }
+
+  .seshat-doc-p:has(+ .seshat-doc-h1),
+  .seshat-doc-p:has(+ .seshat-doc-h2) {
+    margin-bottom: 8px;
+  }
+
+  .seshat-doc-link {
+    color: var(--link);
+    text-decoration: underline;
+    text-decoration-thickness: 0.5px;
+    text-underline-offset: 0.18em;
+    transition: text-decoration-thickness 160ms ease;
+  }
+
+  .seshat-doc-link:hover {
+    text-decoration-thickness: 1.5px;
+  }
+
+  /* ── Lists ────────────────────────────────────────────── */
+
+  .seshat-doc-ul {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 18px;
+  }
+
+  .seshat-doc-ol {
+    list-style: none;
+    counter-reset: seshat-ol;
+    padding: 0;
+    margin: 4px 0 18px;
+  }
+
+  .seshat-doc-li {
+    position: relative;
+    padding-left: 1.75rem;
+    margin: 0.4em 0;
+  }
+
+  .seshat-doc-li > .seshat-doc-p {
+    margin: 0 0 6px;
+  }
+
+  /* Level-1 unordered: filled gold star */
+  .seshat-doc-ul > .seshat-doc-li::before {
+    content: "";
+    position: absolute;
+    left: 0.45rem;
+    top: 0.65em;
+    width: 8px;
+    height: 8px;
+    background-color: var(--gold);
+    -webkit-mask: var(--seshat-star-mask) center / contain no-repeat;
+    mask: var(--seshat-star-mask) center / contain no-repeat;
+  }
+
+  /* Level-2 nested: muted star, smaller */
+  .seshat-doc-ul .seshat-doc-ul > .seshat-doc-li::before {
+    background-color: var(--ink-faint);
+    width: 7px;
+    height: 7px;
+    top: 0.7em;
+  }
+
+  /* Level-3+: tiny dot */
+  .seshat-doc-ul .seshat-doc-ul .seshat-doc-ul > .seshat-doc-li::before {
+    background-color: var(--ink-faint);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    top: 0.85em;
+    -webkit-mask: none;
+    mask: none;
+  }
+
+  /* Ordered lists: numbers in muted mono */
+  .seshat-doc-ol > .seshat-doc-li {
+    counter-increment: seshat-ol;
+  }
+
+  .seshat-doc-ol > .seshat-doc-li::before {
+    content: counter(seshat-ol) ".";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1.4rem;
+    text-align: right;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    font-feature-settings: "tnum";
+    line-height: 1.65;
+  }
+
+  /* Task list */
+  .seshat-doc-li:has(> .seshat-doc-task:first-child) {
+    list-style: none;
+    padding-left: 1.85rem;
+  }
+
+  .seshat-doc-li > .seshat-doc-task:first-child {
+    position: absolute;
+    left: 0.25rem;
+    top: 0.45em;
+  }
+
+  .seshat-doc-li:has(> .seshat-doc-task:first-child)::before {
+    content: none;
+  }
+
+  .seshat-doc-task {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    border: 1px solid var(--rule-strong);
+    background: transparent;
+    color: var(--paper);
+  }
+
+  .seshat-doc-task.is-checked {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* ── Blockquote ───────────────────────────────────────── */
+
+  .seshat-doc-blockquote {
+    margin: 28px 0;
+    padding: 4px 0 4px 22px;
+    border-left: 2px solid var(--gold);
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .seshat-doc-blockquote .seshat-doc-p {
+    font-family: inherit;
+    font-style: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    margin: 0 0 10px;
+  }
+
+  .seshat-doc-blockquote .seshat-doc-p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ── Code ─────────────────────────────────────────────── */
+
+  .seshat-doc-code-inline {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: var(--ink);
+    background: var(--paper-subtle);
+    padding: 0.12em 0.38em;
+    border-radius: 4px;
+    border: 0.5px solid var(--rule);
+  }
+
+  .seshat-doc-pre {
+    margin: 22px 0;
+    padding: 18px 22px;
+    background: var(--paper-subtle);
+    border: 0.5px solid var(--rule);
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.55;
+  }
+
+  .seshat-doc-pre .seshat-doc-code-block {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    white-space: pre;
+  }
+
+  /* ── Tables ───────────────────────────────────────────── */
+
+  .seshat-doc-table-wrap {
+    margin: 24px 0;
+    overflow-x: auto;
+  }
+
+  .seshat-doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 0.5px solid var(--rule-strong);
+    border-bottom: 0.5px solid var(--rule-strong);
+  }
+
+  .seshat-doc-tr {
+    border-bottom: 0.5px solid var(--rule);
+  }
+
+  .seshat-doc-thead .seshat-doc-tr {
+    border-bottom: 0.5px solid var(--rule-strong);
+  }
+
+  .seshat-doc-tbody .seshat-doc-tr:nth-child(even) {
+    background: color-mix(in oklab, var(--paper-subtle) 60%, transparent);
+  }
+
+  .seshat-doc-th,
+  .seshat-doc-td {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.45;
+    vertical-align: top;
+  }
+
+  .seshat-doc-th {
+    font-weight: 600;
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+
+  .seshat-doc-td {
+    color: var(--ink-muted);
+  }
+
+  /* ── Misc ─────────────────────────────────────────────── */
+
+  .seshat-doc-hr {
+    border: 0;
+    height: 0.5px;
+    background: var(--rule);
+    margin: 32px 0;
+    max-width: none;
+  }
+
+  .seshat-doc-img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 28px auto;
+    border-radius: 4px;
+    border: 0.5px solid var(--rule);
+  }
+
+  /* ── 404 ──────────────────────────────────────────────── */
+
+  .seshat-doc-missing {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    background: var(--paper);
+    padding: 32px;
+  }
+
+  .seshat-doc-missing-card {
+    text-align: center;
+    max-width: 360px;
+  }
+
+  .seshat-doc-missing-mark {
+    color: var(--ink-faint);
+    margin: 0 auto 18px;
+  }
+
+  .seshat-doc-missing-title {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 10px;
+    letter-spacing: -0.005em;
+  }
+
+  .seshat-doc-missing-body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.55;
+    margin: 0 0 22px;
+  }
+
+  .seshat-doc-missing-cta {
+    display: inline-block;
+    padding: 9px 18px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--paper);
+    background: var(--ink);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: opacity 160ms ease;
+  }
+
+  .seshat-doc-missing-cta:hover {
+    opacity: 0.85;
+  }
+}

@@ -29,6 +29,7 @@ Package.resolved
 # IDEs
 .vscode/
 .idea/
+.playwright-mcp/
 
 # Node / VSCode extension
 node_modules/
