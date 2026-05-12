@@ -7,7 +7,9 @@ export default function Home() {
     <main className="bg-paper text-ink min-h-screen">
       <Hero />
       <Why />
+      <TwoSurfaces />
       <How />
+      <InPractice />
       <TOC />
       <Philosophy />
       <Footer />
@@ -138,6 +140,97 @@ function Why() {
   );
 }
 
+/* ── Two surfaces ──────────────────────────────────────────────────── */
+
+function TwoSurfaces() {
+  return (
+    <section
+      id="surfaces"
+      className="border-rule border-b-[0.5px] px-20 py-[100px] font-sans"
+    >
+      <div className="mx-auto grid max-w-[1100px] grid-cols-[180px_1fr] gap-20">
+        <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
+          03 · Two surfaces
+        </div>
+        <div>
+          <h2 className="font-heading text-ink m-0 mb-4 text-balance text-[40px] leading-[1.18] font-bold tracking-[-0.01em]">
+            A reader for you, a link for everyone else.
+          </h2>
+          <p className="text-ink-muted m-0 mb-10 max-w-[560px] text-[17px] leading-[1.65]">
+            One product, two surfaces. The desktop reader and the share link
+            are the same document, rendered with the same care.
+          </p>
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+            <SurfaceCard
+              numeral="i."
+              when="today"
+              title="The reader"
+              body="A native macOS app pointed at a managed library at ~/Seshat/. Open any file in its own window, browse a Finder-style sidebar, glance at the outline. Minimal chrome, generous typography, scholarly calm."
+              command="seshat open notes.md"
+              output="→ window opens, typeset like a chapter"
+            />
+            <SurfaceCard
+              numeral="ii."
+              when="next"
+              title="The share layer"
+              body={
+                <>
+                  <code className="font-mono">seshat share</code> takes a local
+                  <code className="font-mono">.md</code> and gives back a
+                  public URL. The recipient opens the link in any browser and
+                  sees the same document, rendered with the same theme. No
+                  login wall. No app install.
+                </>
+              }
+              command="seshat share investigation.md"
+              output="https://seshat.app/d/atrium-7c1a"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SurfaceCard({
+  numeral,
+  when,
+  title,
+  body,
+  command,
+  output,
+}: {
+  numeral: string;
+  when: string;
+  title: string;
+  body: React.ReactNode;
+  command: string;
+  output: string;
+}) {
+  return (
+    <div className="border-rule grid gap-5 border-[0.5px] p-7">
+      <div className="flex items-baseline justify-between">
+        <span className="font-heading text-gold text-[14px] italic">
+          {numeral}
+        </span>
+        <span className="text-ink-faint font-mono text-[10px] tracking-[0.12em] uppercase">
+          {when}
+        </span>
+      </div>
+      <h3 className="font-heading text-ink m-0 text-[22px] font-semibold leading-[1.2]">
+        {title}
+      </h3>
+      <p className="text-ink-muted m-0 text-[15px] leading-[1.65]">{body}</p>
+      <pre className="border-rule bg-paper-subtle text-ink mt-auto m-0 rounded-md border-[0.5px] px-[14px] py-3 font-mono text-[13px] leading-[1.55]">
+        <div>
+          <span className="text-gold">$</span> {command}
+        </div>
+        <div className="text-ink-muted">{output}</div>
+      </pre>
+    </div>
+  );
+}
+
 /* ── How ───────────────────────────────────────────────────────────── */
 
 const commands: Array<{ cmd: string; desc: React.ReactNode }> = [
@@ -172,7 +265,7 @@ function How() {
     >
       <div className="mx-auto grid max-w-[1100px] grid-cols-[180px_1fr] gap-20">
         <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
-          03 · How it works
+          04 · How it works
         </div>
         <div>
           <h2 className="font-heading text-ink m-0 mb-10 text-balance text-[40px] leading-[1.18] font-bold">
@@ -188,6 +281,67 @@ function How() {
                   {c.desc}
                 </p>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── In Practice ───────────────────────────────────────────────────── */
+
+const scenarios: Array<{ headline: string; body: string }> = [
+  {
+    headline: "AI output that finally feels like reading.",
+    body: "A long Claude Code session produces a 3,000-line markdown report. seshat open report.md and the report is typeset like a chapter — for the first time, it feels worth reading instead of scrolling past.",
+  },
+  {
+    headline: "Send a teammate something they’ll actually open.",
+    body: "seshat share report.md returns a link. Paste it into Slack. They click, read it on their phone on the bus, and it still looks good. No login wall, no app install.",
+  },
+  {
+    headline: "A personal study, not a file picker.",
+    body: "Your ~/Seshat/ folder of notes, drafts, investigations, half-finished essays. The sidebar feels like walking into a library — not opening a directory in VS Code.",
+  },
+  {
+    headline: "RFCs that read like the real thing.",
+    body: "Your team writes RFCs as markdown. The Seshat link is the canonical place to read them. Discussion lives elsewhere; the link is just for the document.",
+  },
+];
+
+function InPractice() {
+  return (
+    <section
+      id="practice"
+      className="border-rule border-b-[0.5px] px-20 py-[100px] font-sans"
+    >
+      <div className="mx-auto grid max-w-[1100px] grid-cols-[180px_1fr] gap-20">
+        <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
+          05 · In practice
+        </div>
+        <div>
+          <h2 className="font-heading text-ink m-0 mb-10 text-balance text-[40px] leading-[1.18] font-bold tracking-[-0.01em]">
+            Scenarios this is built around.
+          </h2>
+          <div className="grid gap-10">
+            {scenarios.map((s, i) => (
+              <article
+                key={s.headline}
+                className="border-rule grid gap-4 border-t-[0.5px] pt-7 sm:grid-cols-[64px_1fr] sm:gap-8"
+              >
+                <div className="font-heading text-gold text-[28px] leading-none italic tabular-nums">
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <div>
+                  <h3 className="font-heading text-ink m-0 max-w-[34rem] text-balance text-[22px] font-semibold leading-[1.25]">
+                    {s.headline}
+                  </h3>
+                  <p className="text-ink-muted mt-3 mb-0 max-w-[40rem] text-[15px] leading-[1.65]">
+                    {s.body}
+                  </p>
+                </div>
+              </article>
             ))}
           </div>
         </div>
@@ -218,7 +372,7 @@ function TOC() {
       <div className="mx-auto max-w-[920px]">
         <div className="mb-10 flex items-baseline gap-7">
           <div className="text-ink-faint font-mono text-[11px] tracking-[0.1em] uppercase">
-            04 · Reading, not editing
+            06 · Reading, not editing
           </div>
           <h2 className="font-heading text-ink m-0 text-[40px] font-bold tracking-[-0.01em]">
             What Seshat is, what it isn&rsquo;t.
@@ -256,7 +410,7 @@ function Philosophy() {
     >
       <div className="mx-auto max-w-[720px] text-left">
         <div className="text-ink-faint mb-7 font-mono text-[11px] tracking-[0.1em] uppercase">
-          05 · Philosophy
+          07 · Philosophy
         </div>
         <p className="font-heading text-ink m-0 text-[32px] leading-[1.4] font-normal tracking-[-0.005em]">
           Seshat is for developers, but it isn&rsquo;t a dev tool. It does one
