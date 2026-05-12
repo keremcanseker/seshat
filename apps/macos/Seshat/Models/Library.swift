@@ -39,6 +39,34 @@ final class Library {
         folders = scan()
     }
 
+    func importFiles(_ urls: [URL], into folderURL: URL? = nil) {
+        let manager = FileManager.default
+        let inbox = rootURL.appendingPathComponent("Inbox", isDirectory: true)
+        let target = folderURL ?? inbox
+        try? manager.createDirectory(at: target, withIntermediateDirectories: true)
+
+        for src in urls {
+            let resolved = src.standardizedFileURL
+            guard Library.markdownExtensions.contains(resolved.pathExtension.lowercased()) else {
+                seshatLog("Library.importFiles — skipped non-markdown \(resolved.lastPathComponent)")
+                continue
+            }
+            let dst = target.appendingPathComponent(resolved.lastPathComponent).standardizedFileURL
+            if dst.path == resolved.path { continue }
+
+            do {
+                if manager.fileExists(atPath: dst.path) {
+                    try manager.removeItem(at: dst)
+                }
+                try manager.copyItem(at: resolved, to: dst)
+                seshatLog("Library.importFiles — \(resolved.lastPathComponent) → \(target.lastPathComponent)")
+            } catch {
+                seshatLog("Library.importFiles — copy failed for \(resolved.path): \(error)")
+            }
+        }
+        refresh()
+    }
+
     func file(at url: URL) -> LibraryFile? {
         for folder in folders {
             if let match = folder.files.first(where: { $0.url == url }) {

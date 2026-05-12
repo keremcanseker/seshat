@@ -7,7 +7,7 @@ struct WorkspaceRoot: View {
 
     var body: some View {
         NavigationSplitView {
-            Sidebar(folders: library.folders, selection: $selection)
+            Sidebar(library: library, selection: $selection)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
         } detail: {
             if let selection {
