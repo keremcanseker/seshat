@@ -40,3 +40,6 @@ apps/vscode/out/
 *.log
 design
 *.zip
+
+# Release artifacts (built by scripts/release.sh)
+/dist/

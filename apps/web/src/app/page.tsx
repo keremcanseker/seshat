@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { SeshatMark } from "@/components/seshat-mark";
 
+const DOWNLOAD_URL =
+  "https://github.com/keremcanseker/seshat/releases/latest/download/Seshat.dmg";
+const REPO_URL = "https://github.com/keremcanseker/seshat";
+const BYPASS_COMMAND = "xattr -dr com.apple.quarantine /Applications/Seshat.app";
+
 export default function Home() {
   return (
     <main className="text-ink relative">
@@ -166,7 +171,7 @@ function Hero() {
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-          <PrimaryCTA />
+          <PrimaryCTA heroVariant />
           <SecondaryCTA />
         </div>
 
@@ -190,10 +195,10 @@ function Hero() {
   );
 }
 
-function PrimaryCTA() {
+function PrimaryCTA({ heroVariant = false }: { heroVariant?: boolean }) {
   return (
     <a
-      href="#download"
+      href={heroVariant ? "#download" : DOWNLOAD_URL}
       className="bg-ink text-paper hover:bg-ink/90 inline-flex h-11 items-center gap-2 rounded-md px-5 text-[0.92rem] font-medium tracking-tight shadow-[0_1px_0_color-mix(in_oklab,var(--ink)_30%,transparent)] transition-colors"
     >
       Download for macOS
@@ -213,7 +218,7 @@ function PrimaryCTA() {
 function SecondaryCTA() {
   return (
     <a
-      href="https://github.com/keremcanseker"
+      href={REPO_URL}
       target="_blank"
       rel="noreferrer"
       className="border-rule-strong bg-paper text-ink hover:border-ink/40 hover:bg-paper-subtle inline-flex h-11 items-center gap-2 rounded-md border px-5 text-[0.92rem] font-medium tracking-tight transition-colors"
@@ -733,7 +738,51 @@ function Closing() {
           <code className="text-ink-muted">seshat open path/to/file.md</code>
         </p>
       </div>
+
+      <FirstRunNote />
     </section>
+  );
+}
+
+function FirstRunNote() {
+  return (
+    <aside
+      id="setup"
+      className="border-rule bg-paper-subtle/60 mx-auto mt-16 max-w-[var(--measure-content)] rounded-xl border p-6 sm:p-8"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="font-heading text-ink text-[1.05rem] font-semibold">
+          First-time setup
+        </h3>
+        <span className="seshat-section-label text-gold">pre-release</span>
+      </div>
+      <p className="text-ink-muted mt-3 max-w-2xl text-[0.95rem] leading-[1.65]">
+        Seshat is unsigned during early access (Apple Developer ID is pending).
+        On first launch, macOS Gatekeeper may say the app is{" "}
+        <em>“damaged” or from an unidentified developer</em>. It’s neither —
+        macOS just hasn’t seen our signature yet. Run this once in Terminal,
+        then double-click <code className="font-mono">Seshat.app</code> normally:
+      </p>
+      <CopyableCommand command={BYPASS_COMMAND} />
+      <p className="text-ink-faint mt-4 text-[0.85rem] leading-[1.6]">
+        Once Seshat opens, it will offer to install the{" "}
+        <code className="font-mono">seshat</code> command into your{" "}
+        <code className="font-mono">PATH</code>. You can use{" "}
+        <code className="font-mono">seshat open file.md</code> from any
+        terminal afterwards — no manual symlinks, no shell config edits.
+      </p>
+    </aside>
+  );
+}
+
+function CopyableCommand({ command }: { command: string }) {
+  return (
+    <div className="border-rule bg-paper mt-4 flex items-stretch overflow-hidden rounded-md border">
+      <pre className="text-ink flex-1 overflow-x-auto px-4 py-3 font-mono text-[0.85rem] leading-[1.6]">
+        <span className="text-gold/70 select-none">$ </span>
+        {command}
+      </pre>
+    </div>
   );
 }
 

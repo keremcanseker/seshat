@@ -10,7 +10,7 @@ seshat — native macOS markdown reader
 
 usage:
   seshat open <file.md>       Open a file in a reader window
-  seshat global [<file.md>]   Open the workspace (and copy file into Inbox if given)
+  seshat global [<file.md>]   Open the workspace (reveals file in sidebar if given)
   seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)
   seshat help                 Show this message
 EOF
@@ -59,10 +59,8 @@ case "$cmd" in
                 echo "seshat: file not found: $1" >&2
                 exit 1
             fi
-            mkdir -p "$HOME/Seshat/Inbox"
-            target="$HOME/Seshat/Inbox/$(basename "$1")"
-            cp "$1" "$target"
-            encoded="$(url_encode "$target")"
+            abs="$(abs_path "$1")"
+            encoded="$(url_encode "$abs")"
             open "seshat://global?path=$encoded"
         else
             open "seshat://global"

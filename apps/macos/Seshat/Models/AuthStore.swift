@@ -20,7 +20,7 @@ final class AuthStore {
 
     init(api: APIClient = APIClient()) {
         self.api = api
-        self.token = Keychain.loadToken()
+        self.token = TokenStore.loadToken()
         self.api.authStore = self
         self.status = token == nil ? .signedOut : .unknown
     }
@@ -50,19 +50,19 @@ final class AuthStore {
     func handleCallback(token: String) {
         seshatLog("AuthStore.handleCallback — received token (\(token.count) chars)")
         do {
-            try Keychain.save(token: token)
+            try TokenStore.save(token: token)
             self.token = token
             Task { await refreshUser() }
         } catch {
-            seshatLog("AuthStore.handleCallback — keychain save failed: \(error.localizedDescription)")
-            lastError = "Couldn't securely store your session."
+            seshatLog("AuthStore.handleCallback — token save failed: \(error.localizedDescription)")
+            lastError = "Couldn't store your session."
             status = .signedOut
         }
     }
 
     func signOut() {
         seshatLog("AuthStore.signOut")
-        Keychain.deleteToken()
+        TokenStore.deleteToken()
         token = nil
         currentUser = nil
         status = .signedOut
@@ -71,7 +71,7 @@ final class AuthStore {
 
     func handleUnauthorized() {
         seshatLog("AuthStore.handleUnauthorized — clearing token")
-        Keychain.deleteToken()
+        TokenStore.deleteToken()
         token = nil
         currentUser = nil
         status = .signedOut

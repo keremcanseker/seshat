@@ -1,0 +1,103 @@
+name: Release Seshat
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v0.1.0). Creates a draft release."
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+    env:
+      DEVELOPER_ID_CERT_B64: ${{ secrets.DEVELOPER_ID_CERT_B64 }}
+      DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+      DEVELOPER_ID: ${{ secrets.DEVELOPER_ID }}
+      TEAM_ID: ${{ secrets.TEAM_ID }}
+      NOTARY_API_KEY_B64: ${{ secrets.NOTARY_API_KEY_B64 }}
+      NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+      NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Import Developer ID certificate
+        if: env.DEVELOPER_ID_CERT_B64 != ''
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+
+          echo "$DEVELOPER_ID_CERT_B64" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$DEVELOPER_ID_CERT_PASSWORD" \
+            -T /usr/bin/codesign
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | tr -d '"')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          rm "$CERT_PATH"
+
+      - name: Prepare notarization API key
+        if: env.NOTARY_API_KEY_B64 != ''
+        run: |
+          set -euo pipefail
+          KEY_PATH="$RUNNER_TEMP/notary_api_key.p8"
+          echo "$NOTARY_API_KEY_B64" | base64 --decode > "$KEY_PATH"
+          echo "NOTARY_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: Build & package
+        run: bash scripts/release.sh
+
+      - name: Determine release tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$INPUT_VERSION"
+            draft="true"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+            draft="false"
+          fi
+          # Validate: only allow vX.Y.Z[-suffix] format to prevent any injection downstream
+          if ! printf %s "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9]+)*$'; then
+            echo "error: refusing tag '$tag' — must match v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Seshat ${{ steps.tag.outputs.tag }}
+          draft: ${{ steps.tag.outputs.draft == 'true' }}
+          generate_release_notes: true
+          files: |
+            dist/Seshat.dmg

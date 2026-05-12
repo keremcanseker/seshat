@@ -53,6 +53,7 @@ final class AppRouter {
         }
         switch action {
         case .openReader(let fileURL):
+            NSDocumentController.shared.noteNewRecentDocumentURL(fileURL)
             if let existing = liveReaderWindow(for: fileURL) {
                 seshatLog("AppRouter.handle — focus existing reader \(fileURL.lastPathComponent)")
                 existing.makeKeyAndOrderFront(nil)
@@ -62,8 +63,12 @@ final class AppRouter {
             seshatLog("AppRouter.handle — openWindow(value:) \(fileURL.lastPathComponent)")
             openWindow(value: fileURL)
         case .openWorkspace(let fileURL):
-            workspaceTarget = fileURL
-            seshatLog("AppRouter.handle — openWindow(id: workspace)")
+            if let fileURL {
+                workspaceTarget = InboxImporter.ensureInLibrary(fileURL, libraryRoot: Library.defaultRootURL)
+            } else {
+                workspaceTarget = nil
+            }
+            seshatLog("AppRouter.handle — openWindow(id: workspace) target=\(workspaceTarget?.lastPathComponent ?? "nil")")
             openWindow(id: WorkspaceScene.id)
         case .signInCallback:
             break

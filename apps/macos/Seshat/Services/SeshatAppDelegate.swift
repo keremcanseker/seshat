@@ -17,11 +17,16 @@ final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
             exportIcons(to: outputPath)
         }
         authStore.bootstrap()
+        CLIInstaller.runFirstLaunchIfNeeded()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         seshatLog("AppDelegate.application(_:open:) — \(urls.count) url(s): \(urls.map(\.absoluteString))")
         router.handle(urls: urls)
+    }
+
+    func applicationSupportsSecureRestorableState(_ application: NSApplication) -> Bool {
+        false
     }
 
     private func exportIconsArgument(in arguments: [String]) -> String? {

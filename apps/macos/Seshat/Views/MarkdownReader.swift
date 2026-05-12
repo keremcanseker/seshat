@@ -4,6 +4,7 @@ import SwiftUI
 
 struct MarkdownReader: View {
     let fileURL: URL
+    var reloadTick: Int = 0
 
     @State private var parsed: ParsedMarkdown = .empty
     @State private var rawContent: String = ""
@@ -125,7 +126,7 @@ struct MarkdownReader: View {
                 }
             }
         }
-        .task(id: fileURL) {
+        .task(id: ReaderLoadKey(url: fileURL, tick: reloadTick)) {
             await load()
         }
         .onChange(of: toast) { _, newValue in
@@ -189,7 +190,11 @@ struct MarkdownReader: View {
             )
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(response.url, forType: .string)
-            present(toast: .init(kind: .success, message: "Link copied · \(response.url)"))
+            present(toast: .init(
+                kind: .success,
+                message: "Link copied · \(response.url)",
+                openURL: URL(string: response.url)
+            ))
         } catch APIError.unauthorized {
             present(toast: .init(kind: .failure, message: "Session expired — please sign in again."))
         } catch {
@@ -202,6 +207,11 @@ struct MarkdownReader: View {
             toast = next
         }
     }
+}
+
+private struct ReaderLoadKey: Hashable {
+    let url: URL
+    let tick: Int
 }
 
 private struct ReaderErrorView: View {
@@ -245,6 +255,7 @@ private struct ShareToast: Identifiable, Equatable {
     let id = UUID()
     let kind: Kind
     let message: String
+    var openURL: URL? = nil
 
     enum Kind { case success, failure }
 }
@@ -261,6 +272,13 @@ private struct ShareToastView: View {
                 .foregroundStyle(Color.seshatBodyText)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
+            if let url = toast.openURL {
+                Button("Open") { NSWorkspace.shared.open(url) }
+                    .buttonStyle(.borderless)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.seshatAccent)
+                    .help("Open in browser")
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

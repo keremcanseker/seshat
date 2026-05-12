@@ -18,15 +18,18 @@ private struct ReaderRoot: View {
     @Environment(AppRouter.self) private var router
     @Environment(AuthStore.self) private var authStore
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
+    @AppStorage("SeshatOnboardingCompletedV1") private var onboardingCompleted = false
 
     var body: some View {
         Group {
             if let fileURL {
                 MarkdownReader(fileURL: fileURL)
-            } else if authStore.isAuthenticated {
-                EmptyReaderView()
-            } else {
+            } else if !authStore.isAuthenticated {
                 SignInView()
+            } else if !onboardingCompleted {
+                OnboardingView()
+            } else {
+                EmptyReaderView()
             }
         }
         .preferredColorScheme(appearance.colorScheme)

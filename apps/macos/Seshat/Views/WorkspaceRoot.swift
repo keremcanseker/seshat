@@ -3,6 +3,7 @@ import SwiftUI
 struct WorkspaceRoot: View {
     let library: Library
     @Binding var selection: URL?
+    @State private var reloadTick: Int = 0
 
     var body: some View {
         NavigationSplitView {
@@ -10,7 +11,7 @@ struct WorkspaceRoot: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
         } detail: {
             if let selection {
-                MarkdownReader(fileURL: selection)
+                MarkdownReader(fileURL: selection, reloadTick: reloadTick)
             } else {
                 EmptyDetail()
             }
@@ -18,14 +19,20 @@ struct WorkspaceRoot: View {
         .navigationSplitViewStyle(.balanced)
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                Button("Refresh", systemImage: "arrow.clockwise", action: library.refresh)
-                    .help("Re-scan ~/Seshat/")
+                Button("Refresh", systemImage: "arrow.clockwise", action: refresh)
+                    .keyboardShortcut("r", modifiers: .command)
+                    .help("Re-scan ~/Seshat/ and reload the open file")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button("Reveal Library", systemImage: "folder", action: revealLibrary)
                     .help("Open ~/Seshat/ in Finder")
             }
         }
+    }
+
+    private func refresh() {
+        library.refresh()
+        reloadTick &+= 1
     }
 
     private func revealLibrary() {

@@ -28,7 +28,7 @@ $ seshat open notes.md
 
 …or open the workspace and browse a Finder-style sidebar of everything in your library. The window is for *reading*: minimal chrome, an outline you can glance at, typography that invites you to actually finish the page.
 
-### The share layer (next, not yet built)
+### The share layer (in active development)
 
 The eventual `seshat share` command. The intended flow is intentionally one step:
 
@@ -38,6 +38,8 @@ https://seshat.<domain>/<slug>
 ```
 
 Anyone — developer or not — opens the link in a browser and sees the same document rendered with the same care. No login wall, no "create an account to view," no app install. The web renderer is a deliberate visual port of the desktop reader, so a document looks the same wherever it's read.
+
+The pieces are in flight: a Hono-on-Bun share API (`apps/server/`), a Next.js public reader at `/d/<slug>` (`apps/web/`), and Google OAuth for ownership of shared docs. The macOS "Share" button is the next step.
 
 That's the loop the project is organized around: **write or generate markdown → read it well locally → share it as a link that reads just as well.**
 
@@ -92,20 +94,39 @@ A developer (or developer-adjacent — designer, technical writer, researcher) w
 
 ## Repository layout
 
-This is a monorepo. Today only the macOS app and CLI shim exist; the server and web reader come later.
+This is a monorepo. The macOS reader + CLI ship today; the server and web reader are in active development.
 
 ```
 .
 ├── apps/
-│   ├── macos/             # SwiftUI app — open in Xcode after running xcodegen
+│   ├── macos/             # SwiftUI reader app — open in Xcode after running xcodegen
 │   │   ├── project.yml    # source of truth; regenerates Seshat.xcodeproj
 │   │   └── Seshat/        # Swift sources, assets, Info.plist
-│   └── web/               # FUTURE — web reader for shared docs
-├── server/                # FUTURE — share-link backend
+│   ├── server/            # Hono/Bun share API (auth, doc CRUD, Postgres)
+│   ├── web/               # Next.js public reader for shared docs (/d/<slug>)
+│   └── vscode/            # VSCode extension: "Open in Seshat" / "Reveal in Workspace"
 ├── cli/
 │   └── seshat             # POSIX shell shim, bundled into Seshat.app
+├── scripts/
+│   └── release.sh         # sign + notarize + DMG pipeline
 └── samples/               # markdown fixtures
 ```
+
+## Install (macOS)
+
+For the reader + CLI:
+
+1. Download the latest `Seshat.dmg` from Releases and drag `Seshat.app` to `/Applications`.
+2. Launch it once so macOS registers the URL scheme and bundled CLI.
+3. Install the CLI shim into your PATH (no sudo needed if `~/.local/bin` is on PATH):
+
+   ```sh
+   "/Applications/Seshat.app/Contents/Resources/seshat" install ~/.local/bin/seshat
+   ```
+
+4. Try it: `seshat open samples/stress.md`
+
+The VSCode extension is at `apps/vscode/` — see [its README](apps/vscode/README.md) for install (`code --install-extension apps/vscode/seshat-vscode-0.1.0.vsix`) and dev instructions. Adds *Open in Seshat* (editor title bar + explorer context) and *Reveal in Workspace* (Command Palette).
 
 ## Development
 
@@ -118,5 +139,7 @@ open Seshat.xcodeproj
 ```
 
 The `.xcodeproj` is gitignored — regenerate from `project.yml` whenever sources or build config change.
+
+To build a signed + notarized release DMG: `./scripts/release.sh` (requires Apple Developer ID; see the script header for the env vars).
 
 For deeper architectural and convention notes, see [CLAUDE.md](CLAUDE.md).

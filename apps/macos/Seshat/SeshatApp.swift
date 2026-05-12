@@ -12,6 +12,9 @@ struct SeshatApp: App {
         WorkspaceScene()
             .environment(appDelegate.router)
             .environment(appDelegate.authStore)
+            .commands {
+                SeshatCommands(router: appDelegate.router)
+            }
         ReaderScene()
             .environment(appDelegate.router)
             .environment(appDelegate.authStore)
