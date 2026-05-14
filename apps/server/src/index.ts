@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 import { env } from "./env";
 import { authRoute } from "./routes/auth";
 import { docsRoute } from "./routes/docs";
+import { downloadsRoute } from "./routes/downloads";
 import { healthRoute } from "./routes/health";
 
 const app = new Hono();
@@ -27,6 +28,7 @@ app.get("/", (c) => c.json({ name: "seshat-server", version: "0.1.0" }));
 app.route("/health", healthRoute);
 app.route("/auth", authRoute);
 app.route("/docs", docsRoute);
+app.route("/downloads", downloadsRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {

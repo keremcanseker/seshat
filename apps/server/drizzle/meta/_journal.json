@@ -15,6 +15,13 @@
       "when": 1778243168085,
       "tag": "0001_dark_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778754713899,
+      "tag": "0002_broken_kylun",
+      "breakpoints": true
     }
   ]
 }

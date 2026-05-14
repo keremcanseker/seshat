@@ -49,7 +49,25 @@ export const documents = pgTable(
   ],
 );
 
+export const downloadEvents = pgTable(
+  "download_events",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userAgent: text("user_agent"),
+    referrer: text("referrer"),
+    platform: text("platform"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [index("download_events_created_at_idx").on(t.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
+export type DownloadEvent = typeof downloadEvents.$inferSelect;
+export type NewDownloadEvent = typeof downloadEvents.$inferInsert;

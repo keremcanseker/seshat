@@ -1,3 +1,4 @@
+import { DownloadButton } from "@/components/download-button";
 import { SeshatMark } from "@/components/seshat-mark";
 
 const DOWNLOAD_URL = "/Seshat.dmg";
@@ -66,14 +67,13 @@ function Hero() {
           its own window.
         </p>
         <div className="flex items-center justify-center gap-3.5">
-          <a
+          <DownloadButton
             href={DOWNLOAD_URL}
-            download
             className="bg-ink text-paper inline-flex items-center gap-2.5 rounded-md px-[22px] py-3.5 text-[15px] font-medium no-underline"
           >
             <AppleGlyph />
             Download for macOS
-          </a>
+          </DownloadButton>
           <a
             href="#how"
             className="text-ink inline-flex items-center gap-2 px-[18px] py-3.5 text-[15px] no-underline"
