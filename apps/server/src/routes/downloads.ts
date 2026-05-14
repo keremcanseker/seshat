@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { db } from "../db/client";
 import { downloadEvents } from "../db/schema";
+import { sendDownloadNotification } from "../lib/notify";
 
 const MAX_FIELD_LEN = 512;
 
@@ -33,6 +34,10 @@ downloadsRoute.post("/", async (c) => {
   const platform = data.platform ?? null;
 
   await db.insert(downloadEvents).values({ userAgent, referrer, platform });
+
+  sendDownloadNotification({ userAgent, referrer, platform }).catch((err) => {
+    console.error("download notify failed:", err);
+  });
 
   return c.body(null, 204);
 });

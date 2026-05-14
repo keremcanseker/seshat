@@ -18,6 +18,11 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   AUTH_JWT_SECRET: z.string().min(32),
   AUTH_MACOS_REDIRECT: z.string().default("seshat://auth/callback"),
+  RESEND_API_KEY: z.string().optional(),
+  DOWNLOAD_NOTIFY_TO: z.string().email().optional(),
+  DOWNLOAD_NOTIFY_FROM: z
+    .string()
+    .default("Seshat <notifications@seshat.page>"),
 });
 
 export const env = schema.parse(Bun.env);
