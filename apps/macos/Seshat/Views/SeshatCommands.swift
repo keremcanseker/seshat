@@ -26,6 +26,13 @@ struct SeshatCommands: Commands {
             .keyboardShortcut("o", modifiers: [.command, .shift])
         }
 
+        CommandGroup(after: .toolbar) {
+            Button("Refresh Library") {
+                router.requestWorkspaceRefresh()
+            }
+            .keyboardShortcut("r", modifiers: .command)
+        }
+
         CommandGroup(after: .help) {
             Button("Reveal Library Folder") {
                 NSWorkspace.shared.open(Library.defaultRootURL)

@@ -212,7 +212,7 @@ User has a Hetzner box and a bucket. The plan:
 - Tags / frontmatter parsing → sidebar filters
 - Math via KaTeX (deferred for MVP — would need `WKWebView` fallback for math blocks since MarkdownUI doesn't render LaTeX)
 - Mermaid diagrams (same approach)
-- Folder-management UI in the sidebar (right-click → New Folder, Rename, Move). Currently users do this in Finder.
+- Folder-management UI in the sidebar: New Folder, Import, Rename, Move between folders, Delete (trash).
 - Multi-library support (more than one `~/Seshat/`)
 - Settings UI (font size, theme variants — Notion-light / Notion-dark / paper-warm)
 - iCloud / Dropbox sync of `~/Seshat/`

@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class AppRouter {
     var workspaceTarget: URL?
+    private(set) var workspaceRefreshTick: Int = 0
     let authStore: AuthStore
 
     private var openWindow: OpenWindowAction?
@@ -37,6 +38,34 @@ final class AppRouter {
 
     func unregisterReader(window: NSWindow) {
         readerWindows.removeValue(forKey: ObjectIdentifier(window))
+    }
+
+    func requestWorkspaceRefresh() {
+        workspaceRefreshTick &+= 1
+        seshatLog("AppRouter.requestWorkspaceRefresh — tick=\(workspaceRefreshTick)")
+    }
+
+    func remapReaderFileURL(from oldURL: URL, to newURL: URL) {
+        let old = oldURL.seshatNormalized
+        let new = newURL.seshatNormalized
+        guard !old.seshatMatches(new) else { return }
+        for (key, entry) in readerWindows {
+            guard let fileURL = entry.fileURL, fileURL.seshatMatches(old),
+                  let window = entry.window.window else { continue }
+            readerWindows[key] = ReaderEntry(window: WeakWindow(window), fileURL: new)
+            seshatLog("AppRouter.remapReaderFileURL — \(old.lastPathComponent) → \(new.lastPathComponent)")
+        }
+    }
+
+    func closeReaders(for fileURL: URL) {
+        let target = fileURL.seshatNormalized
+        for (key, entry) in readerWindows {
+            guard let url = entry.fileURL, url.seshatMatches(target),
+                  let window = entry.window.window else { continue }
+            window.close()
+            readerWindows.removeValue(forKey: key)
+            seshatLog("AppRouter.closeReaders — closed window for \(target.lastPathComponent)")
+        }
     }
 
     private func handle(url: URL) {
@@ -76,8 +105,10 @@ final class AppRouter {
     }
 
     private func liveReaderWindow(for url: URL) -> NSWindow? {
+        let target = url.seshatNormalized
         for entry in readerWindows.values {
-            guard entry.fileURL == url, let window = entry.window.window else { continue }
+            guard let fileURL = entry.fileURL, fileURL.seshatMatches(target),
+                  let window = entry.window.window else { continue }
             return window
         }
         return nil

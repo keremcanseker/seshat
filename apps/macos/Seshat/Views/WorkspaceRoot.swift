@@ -5,10 +5,20 @@ struct WorkspaceRoot: View {
     @Binding var selection: URL?
     @State private var reloadTick: Int = 0
 
+    @Environment(AppRouter.self) private var router
+
     var body: some View {
         NavigationSplitView {
-            Sidebar(library: library, selection: $selection)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
+            Sidebar(
+                library: library,
+                selection: $selection,
+                onRefresh: refresh,
+                onRevealLibrary: revealLibrary,
+                onURLRenamed: handleFileURLChange,
+                onItemMoved: handleFileURLChange,
+                onItemDeleted: handleItemDeleted
+            )
+            .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 360)
         } detail: {
             if let selection {
                 MarkdownReader(fileURL: selection, reloadTick: reloadTick)
@@ -17,16 +27,8 @@ struct WorkspaceRoot: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button("Refresh", systemImage: "arrow.clockwise", action: refresh)
-                    .keyboardShortcut("r", modifiers: .command)
-                    .help("Re-scan ~/Seshat/ and reload the open file")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button("Reveal Library", systemImage: "folder", action: revealLibrary)
-                    .help("Open ~/Seshat/ in Finder")
-            }
+        .onChange(of: router.workspaceRefreshTick) { _, _ in
+            refresh()
         }
     }
 
@@ -37,6 +39,20 @@ struct WorkspaceRoot: View {
 
     private func revealLibrary() {
         NSWorkspace.shared.open(library.rootURL)
+    }
+
+    private func handleFileURLChange(from oldURL: URL, to newURL: URL) {
+        router.remapReaderFileURL(from: oldURL, to: newURL)
+        if selection?.seshatMatches(oldURL) == true {
+            reloadTick &+= 1
+        }
+    }
+
+    private func handleItemDeleted(_ url: URL) {
+        router.closeReaders(for: url)
+        if selection?.seshatMatches(url) == true {
+            selection = nil
+        }
     }
 }
 
