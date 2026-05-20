@@ -107,6 +107,25 @@ hdiutil create \
     -format UDZO \
     "$DMG" >/dev/null
 
+if [ -n "${DEVELOPER_ID:-}" ]; then
+    echo "› signing DMG"
+    codesign --force --sign "$DEVELOPER_ID" --timestamp "$DMG"
+
+    if [ -n "${NOTARY_PROFILE:-}" ] || [ -n "${NOTARY_API_KEY_PATH:-}" ]; then
+        echo "› notarizing DMG"
+        if [ -n "${NOTARY_PROFILE:-}" ]; then
+            xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+        else
+            xcrun notarytool submit "$DMG" \
+                --key "$NOTARY_API_KEY_PATH" \
+                --key-id "$NOTARY_API_KEY_ID" \
+                --issuer "$NOTARY_API_ISSUER_ID" \
+                --wait
+        fi
+        xcrun stapler staple "$DMG"
+    fi
+fi
+
 rm -rf "$STAGING"
 rm -rf "$ARCHIVE"
 
