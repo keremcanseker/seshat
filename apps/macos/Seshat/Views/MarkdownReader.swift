@@ -247,16 +247,16 @@ struct MarkdownReader: View {
                         .fill(Color.seshatAccentSoft.opacity(0.12))
                 )
                 .id(section.id)
+        } else if isEditing {
+            // No .textSelection here — it captures the click at the AppKit level
+            // and the tap-to-edit never fires.
+            EditableBlock(content: content) { beginEditing(section) }
+                .id(section.id)
         } else {
             Markdown(content)
                 .markdownTheme(.seshat)
                 .textSelection(.enabled)
                 .id(section.id)
-                .overlay {
-                    if isEditing {
-                        EditTapTarget { beginEditing(section) }
-                    }
-                }
         }
     }
 
@@ -480,16 +480,23 @@ private struct ReaderLoadKey: Hashable {
     let tick: Int
 }
 
-/// Transparent click surface laid over a rendered section while in edit mode.
-/// A faint hover wash signals the block is editable without shifting layout.
-private struct EditTapTarget: View {
+/// A rendered section that, in edit mode, is a single click target. Renders with
+/// the normal theme (no text selection, so the click reaches us) and shows a faint
+/// hover wash to signal it's editable. Tapping swaps it for the source editor.
+private struct EditableBlock: View {
+    let content: String
     let onTap: () -> Void
     @State private var hovering = false
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 6)
-            .fill(Color.seshatAccentSoft.opacity(hovering ? 0.10 : 0))
+        Markdown(content)
+            .markdownTheme(.seshat)
             .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.seshatAccentSoft.opacity(hovering ? 0.12 : 0))
+                    .padding(-6)
+            )
             .onHover { hovering = $0 }
             .onTapGesture(perform: onTap)
             .animation(.easeOut(duration: 0.12), value: hovering)
