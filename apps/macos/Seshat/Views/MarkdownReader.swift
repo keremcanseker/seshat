@@ -485,19 +485,19 @@ private struct EditableBlock: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            Markdown(content)
-                .markdownTheme(.seshat)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onContinuousHover { phase in
-            switch phase {
-            case .active: NSCursor.iBeam.set()
-            case .ended: NSCursor.arrow.set()
+        Markdown(content)
+            .markdownTheme(.seshat)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onContinuousHover { phase in
+                switch phase {
+                case .active: NSCursor.iBeam.set()
+                case .ended: NSCursor.arrow.set()
+                }
             }
-        }
+            // highPriority so the tap wins over MarkdownUI's internal gestures,
+            // which were swallowing onTapGesture / Button taps.
+            .highPriorityGesture(TapGesture().onEnded(onTap))
     }
 }
 
