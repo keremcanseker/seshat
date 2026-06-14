@@ -1,10 +1,11 @@
 import { DownloadButton } from "@/components/download-button";
 import { SeshatMark } from "@/components/seshat-mark";
 
-// Always resolves to the newest published GitHub release's DMG, so a tag push
-// (which runs release.yml → uploads Seshat.dmg) is instantly the live download.
-const DOWNLOAD_URL =
-  "https://github.com/keremcanseker/seshat/releases/latest/download/Seshat.dmg";
+// Our own server is the single source of truth for the latest build (repo is
+// private): /download logs the click and 302s to the current DMG.
+const API_BASE =
+  process.env.NEXT_PUBLIC_SESHAT_API ?? "https://api.seshat.page";
+const DOWNLOAD_URL = `${API_BASE}/download`;
 
 export default function Home() {
   return (
@@ -66,7 +67,7 @@ function Hero() {
         </h1>
         <p className="text-ink-muted mx-auto mt-7 mb-9 max-w-[560px] text-[19px] leading-[1.55]">
           A native macOS reader and CLI for the markdown you write, generate,
-          and share — set in book-quality typography, on a 720pt measure, in
+          and share, set in book-quality typography, on a 720pt measure, in
           its own window.
         </p>
         <div className="flex items-center justify-center gap-3.5">
@@ -174,19 +175,19 @@ function TwoSurfaces() {
             />
             <SurfaceCard
               numeral="ii."
-              when="next"
+              when="today"
               title="The share layer"
               body={
                 <>
-                  <code className="font-mono">seshat share</code> takes a local
-                  <code className="font-mono">.md</code> and gives back a
-                  public URL. The recipient opens the link in any browser and
-                  sees the same document, rendered with the same theme. No
-                  login wall. No app install.
+                  Open a document and click <strong>Share</strong>. Seshat
+                  publishes the file and copies a public URL. The recipient
+                  opens the link in any browser and sees the same document,
+                  rendered with the same theme. No login wall. No app install.
                 </>
               }
-              command="seshat share investigation.md"
-              output="https://seshat.app/d/atrium-7c1a"
+              prompt="▸"
+              command="Share · investigation.md"
+              output="https://seshat.app/d/atrium-7c1a · copied"
             />
           </div>
         </div>
@@ -202,6 +203,7 @@ function SurfaceCard({
   body,
   command,
   output,
+  prompt = "$",
 }: {
   numeral: string;
   when: string;
@@ -209,6 +211,7 @@ function SurfaceCard({
   body: React.ReactNode;
   command: string;
   output: string;
+  prompt?: string;
 }) {
   return (
     <div className="border-rule grid gap-5 border-[0.5px] p-7">
@@ -226,7 +229,7 @@ function SurfaceCard({
       <p className="text-ink-muted m-0 text-[15px] leading-[1.65]">{body}</p>
       <pre className="border-rule bg-paper-subtle text-ink mt-auto m-0 rounded-md border-[0.5px] px-[14px] py-3 font-mono text-[13px] leading-[1.55]">
         <div>
-          <span className="text-gold">$</span> {command}
+          <span className="text-gold">{prompt}</span> {command}
         </div>
         <div className="text-ink-muted">{output}</div>
       </pre>
@@ -236,27 +239,24 @@ function SurfaceCard({
 
 /* ── How ───────────────────────────────────────────────────────────── */
 
-const commands: Array<{ cmd: string; desc: React.ReactNode }> = [
+const commands: Array<{ cmd: string; desc: React.ReactNode; app?: boolean }> = [
   {
     cmd: "seshat open report.md",
-    desc: "Opens any markdown file in its own reader window — 720pt measure, book-grade type, no editor chrome.",
+    desc: "Opens any markdown file in its own reader window. 720pt measure, book-grade type, no editor chrome.",
   },
   {
     cmd: "cd ~/Seshat",
     desc: "A managed library folder. Drop files in, browse them in a Finder-style sidebar, every file gets its own window.",
   },
   {
-    cmd: "seshat share file.md",
+    cmd: "Share → copy link",
+    app: true,
     desc: (
       <>
-        Coming soon. Publishes a local file to a one-link web reader.{" "}
-        <em>No Notion. No service. Just a link.</em>
+        In the reader, click <strong>Share</strong>. Seshat publishes the file
+        and copies a public link. <em>No Notion. No service. Just a link.</em>
       </>
     ),
-  },
-  {
-    cmd: "seshat list",
-    desc: "See your library at a glance — recent reads, last-modified, words, time-to-read.",
   },
 ];
 
@@ -272,13 +272,13 @@ function How() {
         </div>
         <div>
           <h2 className="font-heading text-ink m-0 mb-10 text-balance text-[40px] leading-[1.18] font-bold">
-            Three commands. The rest is reading.
+            Open it. Read it. Share it.
           </h2>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
             {commands.map((c) => (
               <div key={c.cmd} className="grid gap-3.5">
                 <pre className="border-rule bg-paper-subtle text-ink m-0 rounded-md border-[0.5px] px-[18px] py-3.5 font-mono text-[14px]">
-                  <span className="text-gold">$</span> {c.cmd}
+                  <span className="text-gold">{c.app ? "▸" : "$"}</span> {c.cmd}
                 </pre>
                 <p className="text-ink-muted m-0 text-[15px] leading-[1.6]">
                   {c.desc}
@@ -297,7 +297,7 @@ function How() {
 const scenarios: Array<{ headline: string; body: string }> = [
   {
     headline: "AI output that finally feels like reading.",
-    body: "A long Claude Code session produces a 3,000-line markdown report. seshat open report.md and the report is typeset like a chapter — for the first time, it feels worth reading instead of scrolling past.",
+    body: "A long Claude Code session produces a 3,000-line markdown report. seshat open report.md and the report is typeset like a chapter. For the first time, it feels worth reading instead of scrolling past.",
   },
   {
     headline: "Send a teammate something they’ll actually open.",
@@ -305,7 +305,7 @@ const scenarios: Array<{ headline: string; body: string }> = [
   },
   {
     headline: "A personal study, not a file picker.",
-    body: "Your ~/Seshat/ folder of notes, drafts, investigations, half-finished essays. The sidebar feels like walking into a library — not opening a directory in VS Code.",
+    body: "Your ~/Seshat/ folder of notes, drafts, investigations, half-finished essays. The sidebar feels like walking into a library, not opening a directory in VS Code.",
   },
   {
     headline: "RFCs that read like the real thing.",
@@ -359,11 +359,11 @@ const rows: Array<{ num: string; left: string; right: string }> = [
   { num: "I", left: "A reader, not an editor.", right: "No cursor, no toolbar, no margin notes." },
   { num: "II", left: "Opinionated typography.", right: "New York for headings, SF for body, SF Mono for code. Locked." },
   { num: "III", left: "One file, one window.", right: "Like documents in TextEdit. State per file." },
-  { num: "IV", left: "A managed library.", right: "~/Seshat — your folder, your files, our sidebar." },
+  { num: "IV", left: "A managed library.", right: "~/Seshat: your folder, your files, our sidebar." },
   { num: "V", left: "Floating outline.", right: "Background-less panel. Headings only." },
   { num: "VI", left: "Light, by default.", right: "Because Seshat is paper. Dark mode is there." },
   { num: "VII", left: "Built for AI output.", right: "Long agent transcripts, RFCs, postmortems, drafts." },
-  { num: "VIII", left: "Soon — share by link.", right: "One terminal command. One URL. They just open it." },
+  { num: "VIII", left: "Share by link.", right: "One click in the reader, one URL. They just open it." },
 ];
 
 function TOC() {
@@ -417,7 +417,7 @@ function Philosophy() {
         </div>
         <p className="font-heading text-ink m-0 text-[32px] leading-[1.4] font-normal tracking-[-0.005em]">
           Seshat is for developers, but it isn&rsquo;t a dev tool. It does one
-          thing — render long markdown legibly — and it has opinions about how.
+          thing, render long markdown legibly, and it has opinions about how.
           You don&rsquo;t pick the font. You don&rsquo;t pick the measure. You
           don&rsquo;t pick the theme. You drop a file in and read it.
         </p>
@@ -436,7 +436,7 @@ function Footer() {
     <footer className="text-ink-faint flex items-center justify-between px-20 py-10 font-sans text-[12px]">
       <div className="flex items-center gap-3.5">
         <SeshatMark size={18} strokeWidth={1.6} className="text-ink-faint" />
-        <span>Seshat — Mistress of the House of Books</span>
+        <span>Seshat · Mistress of the House of Books</span>
       </div>
       <div className="flex gap-6">
         <a href="#" className="hover:text-ink-muted transition-colors">
