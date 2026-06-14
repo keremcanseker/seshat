@@ -17,7 +17,7 @@ if (env.CORS_ORIGINS.length > 0) {
     "*",
     cors({
       origin: env.CORS_ORIGINS,
-      allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowHeaders: ["content-type", "authorization"],
       credentials: true,
     }),

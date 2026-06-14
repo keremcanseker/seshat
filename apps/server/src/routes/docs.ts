@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
@@ -61,6 +61,46 @@ docsRoute.post("/", requireUser, async (c) => {
     },
     201,
   );
+});
+
+docsRoute.put("/:slug", requireUser, async (c) => {
+  const slugParsed = slugParam.safeParse(c.req.param());
+  if (!slugParsed.success) {
+    throw new HTTPException(400, { message: "invalid slug" });
+  }
+  const parsed = createBody.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    throw new HTTPException(400, {
+      message: parsed.error.issues.map((i) => i.message).join("; "),
+    });
+  }
+  const user = c.get("user");
+  const { title, content } = parsed.data;
+  const [row] = await db
+    .update(documents)
+    .set({ title, content, updatedAt: sql`now()` })
+    .where(
+      and(
+        eq(documents.slug, slugParsed.data.slug),
+        eq(documents.ownerId, user.id),
+      ),
+    )
+    .returning({
+      slug: documents.slug,
+      title: documents.title,
+      createdAt: documents.createdAt,
+      updatedAt: documents.updatedAt,
+    });
+  if (!row) {
+    throw new HTTPException(404, { message: "document not found" });
+  }
+  return c.json({
+    slug: row.slug,
+    title: row.title,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    url: `${env.WEB_BASE_URL}/d/${row.slug}`,
+  });
 });
 
 docsRoute.get("/me", requireUser, async (c) => {
