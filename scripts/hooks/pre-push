@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Auto-publish a notarized release when macOS app changes land on main.
+#
+# Installed via: git config core.hooksPath scripts/hooks
+#
+# Fires on `git push`. When the commits being pushed to main touch apps/macos,
+# it runs scripts/publish.sh (build + Developer ID sign + notarize + upload to
+# R2) BEFORE the push completes, so a failed release blocks the push and a
+# broken DMG never goes live. The version is derived from the git commit count
+# (see release.sh), so each push that ships code lands a strictly higher version
+# and the in-app update banner fires for existing users.
+#
+# Pushes to other branches, or main pushes that don't touch apps/macos, are
+# skipped. To push without releasing: git push --no-verify
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ZERO="0000000000000000000000000000000000000000"
+
+publish=0
+while read -r local_ref local_oid _remote_ref remote_oid; do
+    [ "$local_ref" = "refs/heads/main" ] || continue
+    [ "$local_oid" = "$ZERO" ] && continue   # branch deletion — nothing to build
+
+    if [ "$remote_oid" = "$ZERO" ]; then
+        publish=1                            # first push of main — always release
+    elif git -C "$ROOT" diff --name-only "$remote_oid..$local_oid" -- apps/macos | grep -q .; then
+        publish=1
+    fi
+done
+
+if [ "$publish" -eq 1 ]; then
+    echo "› pre-push: apps/macos changed on main — publishing notarized release"
+    bash "$ROOT/scripts/publish.sh"
+    echo "› pre-push: release published, continuing push"
+else
+    echo "› pre-push: no apps/macos changes to ship — skipping release"
+fi

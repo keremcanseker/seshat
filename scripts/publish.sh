@@ -14,7 +14,9 @@
 #   S3_ACCESS_KEY_ID="..."
 #   S3_SECRET_ACCESS_KEY="..."
 #
-# Then bump MARKETING_VERSION in apps/macos/project.yml and run: scripts/publish.sh
+# The version is derived automatically from git (0.<minor>.<commit count>) by
+# release.sh, so there's nothing to bump — just commit your work and run:
+#   scripts/publish.sh
 
 set -euo pipefail
 

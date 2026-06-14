@@ -32,6 +32,17 @@ fi
 echo "› regenerating project"
 xcodegen generate >/dev/null
 
+# Version is derived from git so it never has to be hand-edited. The major.minor
+# in project.yml's MARKETING_VERSION is the base ("0.2"); the patch is the total
+# commit count, so every build that has new commits gets a strictly higher
+# version and the in-app update banner fires for existing users. Passed as an
+# xcodebuild override — project.yml is never mutated, so the tree stays clean.
+# To start a new minor/major line, just edit the base in project.yml.
+BASE_VERSION="$(grep -m1 'MARKETING_VERSION' project.yml | sed -E 's/.*"([0-9]+\.[0-9]+).*/\1/')"
+COMMIT_COUNT="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 0)"
+RESOLVED_VERSION="${BASE_VERSION:-0.0}.$COMMIT_COUNT"
+echo "› version $RESOLVED_VERSION (base ${BASE_VERSION:-0.0} + $COMMIT_COUNT commits)"
+
 rm -rf "$DIST"
 mkdir -p "$DIST"
 
@@ -45,6 +56,8 @@ xcodebuild \
     CODE_SIGN_IDENTITY="-" \
     CODE_SIGN_STYLE=Manual \
     DEVELOPMENT_TEAM="" \
+    MARKETING_VERSION="$RESOLVED_VERSION" \
+    CURRENT_PROJECT_VERSION="$COMMIT_COUNT" \
     archive 2>&1 | grep -E "warning:|error:|ARCHIVE SUCCEEDED|ARCHIVE FAILED|^\*\*" || true
 
 if [ ! -d "$ARCHIVE/Products/Applications/$APP_NAME.app" ]; then
