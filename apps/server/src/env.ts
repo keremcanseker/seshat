@@ -29,6 +29,9 @@ const schema = z.object({
   SESHAT_DMG_URL: z.string().url().optional(),
   SESHAT_LATEST_VERSION: z.string().optional(),
   SESHAT_RELEASE_NOTES: z.string().optional(),
+  // Preferred: a latest.json the release CI overwrites each tag, so new versions
+  // go live with no server redeploy. Falls back to the SESHAT_LATEST_VERSION env.
+  SESHAT_RELEASE_MANIFEST_URL: z.string().url().optional(),
 });
 
 export const env = schema.parse(Bun.env);
