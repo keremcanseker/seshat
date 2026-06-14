@@ -8,10 +8,13 @@ final class AppRouter {
     private(set) var workspaceRefreshTick: Int = 0
     let authStore: AuthStore
 
-    private var openWindow: OpenWindowAction?
-    private var pending: [URL] = []
-    private var readerWindows: [ObjectIdentifier: ReaderEntry] = [:]
-    private var workspaceWindow: WeakWindow?
+    // Pure window bookkeeping — must NOT be observation-tracked, or mutating it
+    // from WindowAccessor's update callback would re-trigger a SwiftUI graph
+    // update and spin into an infinite render loop (app hang).
+    @ObservationIgnored private var openWindow: OpenWindowAction?
+    @ObservationIgnored private var pending: [URL] = []
+    @ObservationIgnored private var readerWindows: [ObjectIdentifier: ReaderEntry] = [:]
+    @ObservationIgnored private var workspaceWindow: WeakWindow?
 
     init(authStore: AuthStore) {
         self.authStore = authStore
@@ -32,9 +35,15 @@ final class AppRouter {
     }
 
     func registerReader(window: NSWindow, fileURL: URL?) {
+        // Called on every SwiftUI update via WindowAccessor — no-op unless the
+        // window/file actually changed, so we never churn or close in a loop.
         let key = ObjectIdentifier(window)
+        if let existing = readerWindows[key], existing.window.window === window,
+           existing.fileURL == fileURL {
+            return
+        }
         readerWindows[key] = ReaderEntry(window: WeakWindow(window), fileURL: fileURL)
-        seshatLog("AppRouter.registerReader — fileURL=\(fileURL?.lastPathComponent ?? "nil") windowID=\(key.hashValue)")
+        seshatLog("AppRouter.registerReader — fileURL=\(fileURL?.lastPathComponent ?? "nil")")
         reconcileWindows()
     }
 
@@ -43,6 +52,7 @@ final class AppRouter {
     }
 
     func registerWorkspace(window: NSWindow) {
+        guard workspaceWindow?.window !== window else { return }
         workspaceWindow = WeakWindow(window)
         seshatLog("AppRouter.registerWorkspace")
         reconcileWindows()
