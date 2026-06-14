@@ -23,6 +23,12 @@ const schema = z.object({
   DOWNLOAD_NOTIFY_FROM: z
     .string()
     .default("Seshat <notifications@seshat.page>"),
+  // Latest macOS build, served from our own infra (repo is private). Point
+  // SESHAT_DMG_URL at the DMG on the bucket and bump SESHAT_LATEST_VERSION on
+  // each release; /download redirects to it and /version drives the in-app banner.
+  SESHAT_DMG_URL: z.string().url().optional(),
+  SESHAT_LATEST_VERSION: z.string().optional(),
+  SESHAT_RELEASE_NOTES: z.string().optional(),
 });
 
 export const env = schema.parse(Bun.env);
