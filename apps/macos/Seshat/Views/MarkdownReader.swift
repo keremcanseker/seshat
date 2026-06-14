@@ -242,6 +242,7 @@ struct MarkdownReader: View {
                 .lineSpacing(6)
                 .focused($editorFocused)
                 .id(section.id)
+                .onAppear { editorFocused = true }
         } else if isEditing {
             // No .textSelection here — it captures the click at the AppKit level
             // and the tap-to-edit never fires.
@@ -484,16 +485,19 @@ private struct EditableBlock: View {
     let onTap: () -> Void
 
     var body: some View {
-        Markdown(content)
-            .markdownTheme(.seshat)
-            .contentShape(Rectangle())
-            .onContinuousHover { phase in
-                switch phase {
-                case .active: NSCursor.iBeam.set()
-                case .ended: NSCursor.arrow.set()
-                }
+        Button(action: onTap) {
+            Markdown(content)
+                .markdownTheme(.seshat)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onContinuousHover { phase in
+            switch phase {
+            case .active: NSCursor.iBeam.set()
+            case .ended: NSCursor.arrow.set()
             }
-            .onTapGesture(perform: onTap)
+        }
     }
 }
 
