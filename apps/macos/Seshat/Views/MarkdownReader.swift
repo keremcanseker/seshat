@@ -241,11 +241,6 @@ struct MarkdownReader: View {
                 .foregroundStyle(Color.seshatBodyText)
                 .lineSpacing(6)
                 .focused($editorFocused)
-                .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.seshatAccentSoft.opacity(0.12))
-                )
                 .id(section.id)
         } else if isEditing {
             // No .textSelection here — it captures the click at the AppKit level
@@ -480,26 +475,25 @@ private struct ReaderLoadKey: Hashable {
     let tick: Int
 }
 
-/// A rendered section that, in edit mode, is a single click target. Renders with
-/// the normal theme (no text selection, so the click reaches us) and shows a faint
-/// hover wash to signal it's editable. Tapping swaps it for the source editor.
+/// A rendered section that, in edit mode, is a click target. Renders with the
+/// normal theme (no text selection, so the click reaches us) and shows only a text
+/// cursor on hover — no block highlight, so editing feels direct rather than
+/// block-based. Tapping swaps it for the source editor in place.
 private struct EditableBlock: View {
     let content: String
     let onTap: () -> Void
-    @State private var hovering = false
 
     var body: some View {
         Markdown(content)
             .markdownTheme(.seshat)
             .contentShape(Rectangle())
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.seshatAccentSoft.opacity(hovering ? 0.12 : 0))
-                    .padding(-6)
-            )
-            .onHover { hovering = $0 }
+            .onContinuousHover { phase in
+                switch phase {
+                case .active: NSCursor.iBeam.set()
+                case .ended: NSCursor.arrow.set()
+                }
+            }
             .onTapGesture(perform: onTap)
-            .animation(.easeOut(duration: 0.12), value: hovering)
     }
 }
 
