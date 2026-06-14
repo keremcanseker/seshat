@@ -186,15 +186,15 @@ The MVP is the macOS app + CLI. Three larger phases follow, in this order.
 - [ ] App icon (currently empty AppIcon.appiconset)
 - [ ] Code-sign + notarize for distribution outside the Xcode build tree
 
-### Editing mode (v0.2)
+### Editing mode (v0.2) — shipped
 
-Currently read-only. To add editing:
+**Decision (KER-269): minimal in-place block toggle.** Not split-view, not full WYSIWYG. The reader stays the editor — no separate panes, no layout reflow when you enter edit mode.
 
-- Source-preserving editor (avoid the lossy "render → re-serialize" trap)
-- Probably split-view: source on left, rendered preview on right, OR Notion-style WYSIWYG where blocks toggle between source/rendered on focus
-- Editor library options: native `TextView` wrapped in `NSViewRepresentable`, or use a CodeMirror-style web view
-- Keep the SeshatTheme as the rendered output — same visuals, editable underlying source
-- File-write-back via `Library.write(file:content:)` with conflict detection if FSEvents shows the file changed externally
+- **Toggle** via the toolbar Edit button or `⌘E`. The document keeps rendering exactly as it reads; only the block you click swaps to its raw markdown source for editing.
+- **Per-section editing** reuses the existing `MarkdownParser` section split. Clicking a rendered section (`EditTapTarget` overlay, faint hover wash) turns *that* section into an auto-growing `TextField(axis: .vertical)` holding its source. Other sections stay rendered.
+- **Source-preserving** — no AST round-trip. Edited section source is stored per-id in `sectionDrafts`; on save the document is reassembled by joining `parsed.sections` content (edited or original) with `\n`. (Caveat: a whitespace-only leading preamble the parser drops is not reconstructed — only matters for plain re-shares, which use `rawContent` instead.)
+- **Save** via toolbar or `⌘S`. Writes through `DocumentWriter.write(_:to:expecting:)` (atomic, in `Services/`) so reader windows holding files *outside* `~/Seshat/` can save too. `Library.write(file:content:expectedModification:)` delegates to it after a library-root check.
+- **Conflict detection (KER-270):** `DocumentWriter` compares the on-disk modification date against the one captured at load; a newer file returns `WriteOutcome.externalChange(remoteContent:)`, surfaced as an alert (Keep My Version / Reload from Disk / Cancel). Full three-way merge + diff view deferred.
 
 ### Server + web (v0.3)
 

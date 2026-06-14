@@ -3,6 +3,7 @@ import SwiftUI
 struct SidebarExplorerHeader: View {
     let folders: [LibraryFolder]
     @Binding var importDestination: URL?
+    let onNewFile: () -> Void
     let onNewFolder: () -> Void
     let onImport: () -> Void
     let onRefresh: () -> Void
@@ -52,6 +53,11 @@ struct SidebarExplorerHeader: View {
 
             Spacer(minLength: 0)
 
+            SidebarHeaderIconButton(
+                title: "New File",
+                systemImage: "square.and.pencil",
+                action: onNewFile
+            )
             SidebarHeaderIconButton(
                 title: "New Folder",
                 systemImage: "folder.badge.plus",

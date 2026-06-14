@@ -5,8 +5,10 @@ struct FolderSection<Files: View>: View {
     let isImportDestination: Bool
     let onSelectAsDestination: () -> Void
     let onDrop: ([URL]) -> Void
+    let onNewFileHere: () -> Void
     let onImportHere: () -> Void
     let onRenameFolder: () -> Void
+    let onRevealFolder: () -> Void
     let onDeleteFolder: () -> Void
     @ViewBuilder let files: () -> Files
 
@@ -37,11 +39,18 @@ struct FolderSection<Files: View>: View {
             .animation(.easeOut(duration: 0.12), value: isImportDestination)
             .onTapGesture(count: 1, perform: onSelectAsDestination)
             .contextMenu {
-                Button("Import Here…", systemImage: "doc.badge.plus") {
+                Button("New File…", systemImage: "doc.badge.plus") {
+                    onNewFileHere()
+                }
+                Button("Import Here…", systemImage: "square.and.arrow.down") {
                     onImportHere()
                 }
+                Divider()
                 Button("Rename Folder…", systemImage: "pencil") {
                     onRenameFolder()
+                }
+                Button("Reveal in Finder", systemImage: "magnifyingglass") {
+                    onRevealFolder()
                 }
                 Divider()
                 Button("Delete Folder", systemImage: "trash", role: .destructive) {

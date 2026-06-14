@@ -4,6 +4,7 @@ import AppKit
 final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
     let authStore: AuthStore
     let router: AppRouter
+    let updateChecker = UpdateChecker()
 
     override init() {
         let authStore = AuthStore()
@@ -18,6 +19,7 @@ final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
         }
         authStore.bootstrap()
         CLIInstaller.runFirstLaunchIfNeeded()
+        Task { await updateChecker.check() }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

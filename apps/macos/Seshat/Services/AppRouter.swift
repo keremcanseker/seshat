@@ -11,6 +11,7 @@ final class AppRouter {
     private var openWindow: OpenWindowAction?
     private var pending: [URL] = []
     private var readerWindows: [ObjectIdentifier: ReaderEntry] = [:]
+    private var workspaceWindow: WeakWindow?
 
     init(authStore: AuthStore) {
         self.authStore = authStore
@@ -34,10 +35,28 @@ final class AppRouter {
         let key = ObjectIdentifier(window)
         readerWindows[key] = ReaderEntry(window: WeakWindow(window), fileURL: fileURL)
         seshatLog("AppRouter.registerReader — fileURL=\(fileURL?.lastPathComponent ?? "nil") windowID=\(key.hashValue)")
+        reconcileWindows()
     }
 
     func unregisterReader(window: NSWindow) {
         readerWindows.removeValue(forKey: ObjectIdentifier(window))
+    }
+
+    func registerWorkspace(window: NSWindow) {
+        workspaceWindow = WeakWindow(window)
+        seshatLog("AppRouter.registerWorkspace")
+        reconcileWindows()
+    }
+
+    /// The workspace ("global") window is the one and only document window.
+    /// Once it exists, no standalone reader window survives beside it — opening a
+    /// markdown file shows it inside the workspace, never in a second window.
+    private func reconcileWindows() {
+        guard workspaceWindow?.window != nil else { return }
+        for (key, entry) in readerWindows {
+            entry.window.window?.close()
+            readerWindows.removeValue(forKey: key)
+        }
     }
 
     func requestWorkspaceRefresh() {
@@ -83,35 +102,25 @@ final class AppRouter {
         switch action {
         case .openReader(let fileURL):
             NSDocumentController.shared.noteNewRecentDocumentURL(fileURL)
-            if let existing = liveReaderWindow(for: fileURL) {
-                seshatLog("AppRouter.handle — focus existing reader \(fileURL.lastPathComponent)")
-                existing.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-                return
-            }
-            seshatLog("AppRouter.handle — openWindow(value:) \(fileURL.lastPathComponent)")
-            openWindow(value: fileURL)
+            // Always show files inside the single workspace window — never a
+            // separate per-file reader window (KER-504.1 / "new things" #1).
+            openInWorkspace(fileURL, openWindow: openWindow)
         case .openWorkspace(let fileURL):
-            if let fileURL {
-                workspaceTarget = InboxImporter.ensureInLibrary(fileURL, libraryRoot: Library.defaultRootURL)
-            } else {
-                workspaceTarget = nil
-            }
-            seshatLog("AppRouter.handle — openWindow(id: workspace) target=\(workspaceTarget?.lastPathComponent ?? "nil")")
-            openWindow(id: WorkspaceScene.id)
+            openInWorkspace(fileURL, openWindow: openWindow)
         case .signInCallback:
             break
         }
     }
 
-    private func liveReaderWindow(for url: URL) -> NSWindow? {
-        let target = url.seshatNormalized
-        for entry in readerWindows.values {
-            guard let fileURL = entry.fileURL, fileURL.seshatMatches(target),
-                  let window = entry.window.window else { continue }
-            return window
+    private func openInWorkspace(_ fileURL: URL?, openWindow: OpenWindowAction) {
+        if let fileURL {
+            workspaceTarget = InboxImporter.ensureInLibrary(fileURL, libraryRoot: Library.defaultRootURL)
+        } else {
+            workspaceTarget = nil
         }
-        return nil
+        seshatLog("AppRouter.openInWorkspace — target=\(workspaceTarget?.lastPathComponent ?? "nil")")
+        openWindow(id: WorkspaceScene.id)
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 

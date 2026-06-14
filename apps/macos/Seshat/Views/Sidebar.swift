@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -16,6 +17,9 @@ struct Sidebar: View {
     @State private var showPickFolderBeforeImport = false
     @State private var showNewFolderAlert = false
     @State private var newFolderName = ""
+    @State private var showNewFileAlert = false
+    @State private var newFileName = ""
+    @State private var newFileTargetFolder: URL?
     @State private var showRenameAlert = false
     @State private var renameDraft = ""
     @State private var renameTarget: SidebarRenameTarget?
@@ -28,6 +32,7 @@ struct Sidebar: View {
             SidebarExplorerHeader(
                 folders: library.folders,
                 importDestination: $importDestinationFolderURL,
+                onNewFile: presentNewFileFromToolbar,
                 onNewFolder: presentNewFolder,
                 onImport: presentImportFromToolbar,
                 onRefresh: onRefresh,
@@ -63,6 +68,22 @@ struct Sidebar: View {
             }
         } message: {
             Text("Creates a workspace folder in ~/Seshat/.")
+        }
+        .alert("New File", isPresented: $showNewFileAlert) {
+            TextField("File name", text: $newFileName)
+            Button("Cancel", role: .cancel) {
+                newFileName = ""
+                newFileTargetFolder = nil
+            }
+            Button("Create") {
+                createFile()
+            }
+        } message: {
+            if let folder = newFileTargetFolder {
+                Text("Creates an empty “.md” note in “\(folder.lastPathComponent)”.")
+            } else {
+                Text("Creates an empty “.md” note.")
+            }
         }
         .alert(renameAlertTitle, isPresented: $showRenameAlert) {
             TextField("Name", text: $renameDraft)
@@ -133,8 +154,10 @@ struct Sidebar: View {
                     isImportDestination: importDestinationFolderURL?.seshatMatches(folder.url) == true,
                     onSelectAsDestination: { importDestinationFolderURL = folder.url },
                     onDrop: { urls in handleDrop(urls, into: folder) },
+                    onNewFileHere: { presentNewFile(into: folder.url) },
                     onImportHere: { presentImport(into: folder.url) },
                     onRenameFolder: { presentRename(folder: folder) },
+                    onRevealFolder: { revealInFinder(folder.url) },
                     onDeleteFolder: { presentDelete(folder: folder) }
                 ) {
                     ForEach(folder.files) { file in
@@ -161,10 +184,13 @@ struct Sidebar: View {
             return true
         }
         .contextMenu {
+            Button("New File…", systemImage: "doc.badge.plus") {
+                presentNewFileFromToolbar()
+            }
             Button("New Folder", systemImage: "folder.badge.plus") {
                 presentNewFolder()
             }
-            Button("Import File…", systemImage: "doc.badge.plus") {
+            Button("Import File…", systemImage: "square.and.arrow.down") {
                 presentImportFromToolbar()
             }
         }
@@ -199,6 +225,12 @@ struct Sidebar: View {
 
     @ViewBuilder
     private func fileContextMenu(file: LibraryFile, currentFolder: LibraryFolder) -> some View {
+        Button("New File…", systemImage: "doc.badge.plus") {
+            presentNewFile(into: currentFolder.url)
+        }
+
+        Divider()
+
         Button("Rename…", systemImage: "pencil") {
             presentRename(file: file)
         }
@@ -212,6 +244,10 @@ struct Sidebar: View {
                     }
                 }
             }
+        }
+
+        Button("Reveal in Finder", systemImage: "magnifyingglass") {
+            revealInFinder(file.url)
         }
 
         Divider()
@@ -238,6 +274,43 @@ struct Sidebar: View {
         library.clearLastError()
         newFolderName = ""
         showNewFolderAlert = true
+    }
+
+    private func presentNewFile(into folder: URL) {
+        library.clearLastError()
+        newFileName = ""
+        newFileTargetFolder = folder
+        showNewFileAlert = true
+    }
+
+    private func presentNewFileFromToolbar() {
+        library.clearLastError()
+        guard !library.folders.isEmpty else {
+            presentNewFolder()
+            return
+        }
+        let target = importDestinationFolderURL ?? library.folders.first?.url
+        guard let target else {
+            presentNewFolder()
+            return
+        }
+        presentNewFile(into: target)
+    }
+
+    private func createFile() {
+        let name = newFileName
+        let target = newFileTargetFolder
+        newFileName = ""
+        newFileTargetFolder = nil
+        guard let target else { return }
+        if let url = library.createFile(named: name, in: target) {
+            importDestinationFolderURL = target
+            selection = url
+        }
+    }
+
+    private func revealInFinder(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
     private func presentImportFromToolbar() {

@@ -14,6 +14,20 @@ struct MarkdownReader: View {
     @State private var scrolledSectionId: String?
     @State private var isSharing: Bool = false
     @State private var toast: ShareToast?
+    @State private var showSearch: Bool = false
+    @State private var searchQuery: String = ""
+    @State private var searchMatches: [String] = []
+    @State private var currentMatch: Int = 0
+    @FocusState private var searchFocused: Bool
+    @State private var isEditing: Bool = false
+    @State private var editingSectionId: String?
+    @State private var sectionDrafts: [String: String] = [:]
+    @State private var activeDraft: String = ""
+    @FocusState private var editorFocused: Bool
+    @State private var loadedModificationDate: Date?
+    @State private var showConflictAlert: Bool = false
+    @State private var conflictRemoteContent: String = ""
+    @State private var showSharedDocs: Bool = false
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @Environment(AuthStore.self) private var authStore
 
@@ -26,10 +40,7 @@ struct MarkdownReader: View {
                     ReaderErrorView(error: loadError)
                 } else {
                     ForEach(parsed.sections) { section in
-                        Markdown(section.content)
-                            .markdownTheme(.seshat)
-                            .textSelection(.enabled)
-                            .id(section.id)
+                        sectionView(section)
                     }
                 }
             }
@@ -72,6 +83,42 @@ struct MarkdownReader: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .overlay(alignment: .topTrailing) {
+            if showSearch {
+                ReaderSearchBar(
+                    query: $searchQuery,
+                    matchCount: searchMatches.count,
+                    currentIndex: currentMatch,
+                    focus: $searchFocused,
+                    onNext: { advanceMatch(by: 1) },
+                    onPrevious: { advanceMatch(by: -1) },
+                    onClose: closeSearch
+                )
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .background {
+            Button("", action: toggleSearch)
+                .keyboardShortcut("f", modifiers: .command)
+                .hidden()
+        }
+        .onChange(of: searchQuery) { _, _ in recomputeMatches() }
+        .onChange(of: parsed) { _, _ in recomputeMatches() }
+        .onExitCommand {
+            if showSearch { closeSearch() }
+        }
+        .alert("This file changed on disk", isPresented: $showConflictAlert) {
+            Button("Keep My Version", role: .destructive) { overwriteConflict() }
+            Button("Reload from Disk") { reloadFromDisk() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("“\(fileURL.lastPathComponent)” was modified by another app since you opened it. Keeping your version overwrites those changes.")
+        }
+        .sheet(isPresented: $showSharedDocs) {
+            SharedDocsView()
+        }
         .navigationTitle("")
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -107,6 +154,29 @@ struct MarkdownReader: View {
                 }
                 .help(appearance.nextLabel)
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) { toggleEdit() }
+                } label: {
+                    Label(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark.circle" : "square.and.pencil")
+                }
+                .toggleStyle(.button)
+                .keyboardShortcut("e", modifiers: .command)
+                .disabled(loadError != nil)
+                .help(isEditing ? "Finish editing (⌘E)" : "Edit this document (⌘E)")
+            }
+            if isEditing || isDirty {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        Label("Save", systemImage: "tray.and.arrow.down")
+                    }
+                    .keyboardShortcut("s", modifiers: .command)
+                    .disabled(!isDirty && editingSectionId == nil)
+                    .help("Save (⌘S)")
+                }
+            }
             if authStore.isAuthenticated {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { Task { await share() } }) {
@@ -122,7 +192,7 @@ struct MarkdownReader: View {
                     .help("Publish to seshat.page and copy the link")
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    UserMenu()
+                    UserMenu(onShowSharedDocs: { showSharedDocs = true })
                 }
             }
         }
@@ -161,12 +231,125 @@ struct MarkdownReader: View {
         return showOutline ? "Hide outline" : "Show outline"
     }
 
+    @ViewBuilder
+    private func sectionView(_ section: MarkdownSection) -> some View {
+        let content = sectionDrafts[section.id] ?? section.content
+        if isEditing, editingSectionId == section.id {
+            TextField("", text: $activeDraft, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.system(size: 16))
+                .foregroundStyle(Color.seshatBodyText)
+                .lineSpacing(6)
+                .focused($editorFocused)
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.seshatAccentSoft.opacity(0.12))
+                )
+                .id(section.id)
+        } else {
+            Markdown(content)
+                .markdownTheme(.seshat)
+                .textSelection(.enabled)
+                .id(section.id)
+                .overlay {
+                    if isEditing {
+                        EditTapTarget { beginEditing(section) }
+                    }
+                }
+        }
+    }
+
+    private func toggleEdit() {
+        if isEditing {
+            commitActiveEdit()
+            isEditing = false
+        } else {
+            isEditing = true
+        }
+    }
+
+    private func beginEditing(_ section: MarkdownSection) {
+        commitActiveEdit()
+        editingSectionId = section.id
+        activeDraft = sectionDrafts[section.id] ?? section.content
+        editorFocused = true
+    }
+
+    private func commitActiveEdit() {
+        guard let id = editingSectionId else { return }
+        let original = parsed.sections.first { $0.id == id }?.content ?? ""
+        if activeDraft == original {
+            sectionDrafts.removeValue(forKey: id)
+        } else {
+            sectionDrafts[id] = activeDraft
+        }
+        editingSectionId = nil
+    }
+
+    private var isDirty: Bool { !sectionDrafts.isEmpty }
+
+    private func reconstructedContent() -> String {
+        parsed.sections.map { sectionDrafts[$0.id] ?? $0.content }.joined(separator: "\n")
+    }
+
+    private func save() async {
+        commitActiveEdit()
+        guard isDirty else { return }
+        let newContent = reconstructedContent()
+        do {
+            let outcome = try DocumentWriter.write(
+                newContent,
+                to: fileURL,
+                expecting: loadedModificationDate
+            )
+            switch outcome {
+            case .wrote(let date):
+                applySaved(content: newContent, modificationDate: date)
+                present(toast: .init(kind: .success, message: "Saved"))
+            case .externalChange(let remote):
+                conflictRemoteContent = remote
+                showConflictAlert = true
+            }
+        } catch {
+            present(toast: .init(kind: .failure, message: "Couldn't save — \(error.localizedDescription)"))
+        }
+    }
+
+    private func applySaved(content: String, modificationDate: Date?) {
+        rawContent = content
+        parsed = MarkdownParser.parse(content)
+        sectionDrafts = [:]
+        editingSectionId = nil
+        loadedModificationDate = modificationDate
+    }
+
+    private func overwriteConflict() {
+        let newContent = reconstructedContent()
+        do {
+            try DocumentWriter.write(newContent, to: fileURL, expecting: nil)
+            applySaved(content: newContent, modificationDate: DocumentWriter.modificationDate(of: fileURL))
+            present(toast: .init(kind: .success, message: "Saved (overwrote external changes)"))
+        } catch {
+            present(toast: .init(kind: .failure, message: "Couldn't save — \(error.localizedDescription)"))
+        }
+    }
+
+    private func reloadFromDisk() {
+        applySaved(content: conflictRemoteContent, modificationDate: DocumentWriter.modificationDate(of: fileURL))
+        present(toast: .init(kind: .success, message: "Reloaded from disk"))
+    }
+
     private func load() async {
         do {
             let raw = try String(contentsOf: fileURL, encoding: .utf8)
             rawContent = raw
             parsed = MarkdownParser.parse(raw)
             loadError = nil
+            loadedModificationDate = DocumentWriter.modificationDate(of: fileURL)
+            sectionDrafts = [:]
+            editingSectionId = nil
+            isEditing = false
         } catch {
             rawContent = ""
             loadError = error
@@ -176,7 +359,8 @@ struct MarkdownReader: View {
     private func share() async {
         guard !isSharing else { return }
         let title = fileURL.deletingPathExtension().lastPathComponent
-        let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = isDirty ? reconstructedContent() : rawContent
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedContent.isEmpty else {
             present(toast: .init(kind: .failure, message: "Nothing to share — file is empty."))
             return
@@ -184,15 +368,13 @@ struct MarkdownReader: View {
         isSharing = true
         defer { isSharing = false }
         do {
-            let response: CreateDocResponse = try await authStore.api.post(
-                "docs",
-                body: CreateDocBody(title: title, content: rawContent)
-            )
+            let (response, wasUpdate) = try await publish(title: title, content: content)
+            ShareStore.setSlug(response.slug, for: fileURL)
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(response.url, forType: .string)
             present(toast: .init(
                 kind: .success,
-                message: "Link copied · \(response.url)",
+                message: "\(wasUpdate ? "Link updated" : "Link copied") · \(response.url)",
                 openURL: URL(string: response.url)
             ))
         } catch APIError.unauthorized {
@@ -202,16 +384,116 @@ struct MarkdownReader: View {
         }
     }
 
+    /// Updates the existing document if this file was shared before (PUT), else
+    /// creates a new one (POST). Falls back to POST if the remembered doc is gone.
+    private func publish(title: String, content: String) async throws -> (CreateDocResponse, Bool) {
+        let body = CreateDocBody(title: title, content: content)
+        if let slug = ShareStore.slug(for: fileURL) {
+            do {
+                let response: CreateDocResponse = try await authStore.api.put("docs/\(slug)", body: body)
+                return (response, true)
+            } catch APIError.server(let status, _) where status == 404 {
+                ShareStore.removeSlug(for: fileURL)
+            }
+        }
+        let response: CreateDocResponse = try await authStore.api.post("docs", body: body)
+        return (response, false)
+    }
+
     private func present(toast next: ShareToast) {
         withAnimation(.easeInOut(duration: 0.25)) {
             toast = next
         }
+    }
+
+    private func toggleSearch() {
+        if showSearch {
+            closeSearch()
+        } else {
+            withAnimation(.easeOut(duration: 0.18)) { showSearch = true }
+            searchFocused = true
+        }
+    }
+
+    private func closeSearch() {
+        withAnimation(.easeOut(duration: 0.18)) { showSearch = false }
+        searchQuery = ""
+        searchMatches = []
+        currentMatch = 0
+        searchFocused = false
+    }
+
+    private func recomputeMatches() {
+        let needle = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard showSearch, needle.count >= 1 else {
+            searchMatches = []
+            currentMatch = 0
+            return
+        }
+        var matches: [String] = []
+        for section in parsed.sections {
+            let occurrences = section.content.ranges(
+                of: needle,
+                options: [.caseInsensitive, .diacriticInsensitive]
+            ).count
+            matches.append(contentsOf: Array(repeating: section.id, count: occurrences))
+        }
+        searchMatches = matches
+        currentMatch = 0
+        scrollToCurrentMatch()
+    }
+
+    private func advanceMatch(by delta: Int) {
+        guard !searchMatches.isEmpty else { return }
+        let count = searchMatches.count
+        currentMatch = ((currentMatch + delta) % count + count) % count
+        scrollToCurrentMatch()
+    }
+
+    private func scrollToCurrentMatch() {
+        guard searchMatches.indices.contains(currentMatch) else { return }
+        let id = searchMatches[currentMatch]
+        withAnimation(.easeOut(duration: 0.28)) {
+            scrolledSectionId = id
+        }
+    }
+}
+
+private extension String {
+    func ranges(
+        of substring: String,
+        options: String.CompareOptions
+    ) -> [Range<String.Index>] {
+        var result: [Range<String.Index>] = []
+        var start = startIndex
+        while let range = range(of: substring, options: options, range: start..<endIndex) {
+            result.append(range)
+            start = range.upperBound > range.lowerBound ? range.upperBound : index(after: range.lowerBound)
+            if start >= endIndex { break }
+        }
+        return result
     }
 }
 
 private struct ReaderLoadKey: Hashable {
     let url: URL
     let tick: Int
+}
+
+/// Transparent click surface laid over a rendered section while in edit mode.
+/// A faint hover wash signals the block is editable without shifting layout.
+private struct EditTapTarget: View {
+    let onTap: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .fill(Color.seshatAccentSoft.opacity(hovering ? 0.10 : 0))
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            .onTapGesture(perform: onTap)
+            .animation(.easeOut(duration: 0.12), value: hovering)
+    }
 }
 
 private struct ReaderErrorView: View {
@@ -227,6 +509,7 @@ private struct ReaderErrorView: View {
 }
 
 private struct UserMenu: View {
+    let onShowSharedDocs: () -> Void
     @Environment(AuthStore.self) private var authStore
 
     var body: some View {
@@ -238,6 +521,8 @@ private struct UserMenu: View {
                     .font(.system(size: 11))
                 Divider()
             }
+            Button("My Shared Documents…", action: onShowSharedDocs)
+            Divider()
             Button("Sign Out", role: .destructive, action: authStore.signOut)
         } label: {
             Image(systemName: "person.crop.circle")

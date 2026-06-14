@@ -78,6 +78,69 @@ final class Library {
         }
     }
 
+    /// Writes editor content back to a library file, refusing to clobber an edit
+    /// made on disk since `expectedModification`. Returns `nil` only on a hard
+    /// failure (sets `lastError`); a detected conflict comes back as
+    /// `.externalChange` for the caller to resolve.
+    func write(
+        file fileURL: URL,
+        content: String,
+        expectedModification: Date?
+    ) -> WriteOutcome? {
+        lastError = nil
+        let target = fileURL.standardizedFileURL
+        guard isUnderLibraryRoot(target) else {
+            lastError = .notInLibrary
+            return nil
+        }
+        do {
+            let outcome = try DocumentWriter.write(content, to: target, expecting: expectedModification)
+            if case .wrote = outcome {
+                seshatLog("Library.write — \(target.lastPathComponent)")
+                refresh()
+            }
+            return outcome
+        } catch {
+            seshatLog("Library.write — failed: \(error)")
+            lastError = .writeFailed
+            return nil
+        }
+    }
+
+    @discardableResult
+    func createFile(named rawName: String, in folderURL: URL) -> URL? {
+        lastError = nil
+        let folder = folderURL.standardizedFileURL
+        guard isTopLevelWorkspaceFolder(folder) else {
+            lastError = .notInLibrary
+            return nil
+        }
+
+        let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let baseName: String
+        if trimmed.isEmpty {
+            baseName = "Untitled"
+        } else {
+            guard let validated = Self.validatedFileBaseName(trimmed) else {
+                lastError = .invalidName
+                return nil
+            }
+            baseName = validated
+        }
+
+        let fileURL = uniqueFileURL(baseName: baseName, ext: "md", in: folder)
+        do {
+            try "".write(to: fileURL, atomically: true, encoding: .utf8)
+            seshatLog("Library.createFile — \(fileURL.lastPathComponent) in \(folder.lastPathComponent)")
+            refresh()
+            return fileURL
+        } catch {
+            seshatLog("Library.createFile — failed: \(error)")
+            lastError = .writeFailed
+            return nil
+        }
+    }
+
     @discardableResult
     func renameItem(at itemURL: URL, to newBaseName: String) -> URL? {
         lastError = nil
@@ -368,6 +431,19 @@ final class Library {
         var index = 2
         while manager.fileExists(atPath: candidate.path) {
             candidate = rootURL.appendingPathComponent("\(baseName) \(index)", isDirectory: true)
+            index += 1
+        }
+        return candidate
+    }
+
+    private func uniqueFileURL(baseName: String, ext: String, in folder: URL) -> URL {
+        let manager = FileManager.default
+        var candidate = folder.appendingPathComponent("\(baseName).\(ext)")
+        guard manager.fileExists(atPath: candidate.path) else { return candidate }
+
+        var index = 2
+        while manager.fileExists(atPath: candidate.path) {
+            candidate = folder.appendingPathComponent("\(baseName) \(index).\(ext)")
             index += 1
         }
         return candidate

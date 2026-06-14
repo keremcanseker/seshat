@@ -41,6 +41,14 @@ final class APIClient {
         try await send(path: path, method: "POST", body: body, requiresAuth: requiresAuth)
     }
 
+    func put<Body: Encodable, Response: Decodable>(
+        _ path: String,
+        body: Body,
+        requiresAuth: Bool = true
+    ) async throws -> Response {
+        try await send(path: path, method: "PUT", body: body, requiresAuth: requiresAuth)
+    }
+
     func delete<Response: Decodable>(_ path: String, requiresAuth: Bool = true) async throws -> Response {
         try await send(path: path, method: "DELETE", body: Optional<EmptyBody>.none, requiresAuth: requiresAuth)
     }

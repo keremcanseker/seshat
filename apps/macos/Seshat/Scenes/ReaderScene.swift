@@ -17,6 +17,7 @@ private struct ReaderRoot: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(AppRouter.self) private var router
     @Environment(AuthStore.self) private var authStore
+    @Environment(UpdateChecker.self) private var updateChecker
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @AppStorage("SeshatOnboardingCompletedV1") private var onboardingCompleted = false
 
@@ -30,6 +31,12 @@ private struct ReaderRoot: View {
                 OnboardingView()
             } else {
                 EmptyReaderView()
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let info = updateChecker.available {
+                UpdateBanner(info: info, onDismiss: updateChecker.dismiss)
+                    .animation(.easeOut(duration: 0.25), value: updateChecker.available)
             }
         }
         .preferredColorScheme(appearance.colorScheme)
