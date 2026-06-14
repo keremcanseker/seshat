@@ -42,4 +42,5 @@ design
 *.zip
 
 # Release artifacts (built by scripts/release.sh)
-/dist/
+/dist
+scripts/release.env
