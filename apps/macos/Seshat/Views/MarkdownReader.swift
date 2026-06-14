@@ -195,33 +195,22 @@ struct MarkdownReader: View {
 
     @ViewBuilder
     private func sectionView(_ section: MarkdownSection) -> some View {
-        Markdown(section.content)
-            .markdownTheme(.seshat)
-            .textSelection(.enabled)
-            .id(section.id)
-            .background {
-                if isSearching {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(highlightFill(for: section.id))
-                        .padding(.horizontal, -10)
-                        .padding(.vertical, -6)
-                }
-            }
-            .animation(.easeOut(duration: 0.15), value: currentMatchSectionId)
+        SearchableSection(
+            content: section.content,
+            query: isSearching ? trimmedQuery : "",
+            isCurrent: section.id == currentMatchSectionId
+        )
+        .id(section.id)
+    }
+
+    private var trimmedQuery: String {
+        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var isSearching: Bool { showSearch && !searchMatches.isEmpty }
 
-    private var matchedSectionIds: Set<String> { Set(searchMatches) }
-
     private var currentMatchSectionId: String? {
         searchMatches.indices.contains(currentMatch) ? searchMatches[currentMatch] : nil
-    }
-
-    private func highlightFill(for id: String) -> Color {
-        if id == currentMatchSectionId { return Color.seshatAccentSoft.opacity(0.5) }
-        if matchedSectionIds.contains(id) { return Color.seshatAccentSoft.opacity(0.18) }
-        return .clear
     }
 
     private func load() async {
@@ -358,6 +347,109 @@ private extension String {
 private struct ReaderLoadKey: Hashable {
     let url: URL
     let tick: Int
+}
+
+/// Renders a section with MarkdownUI normally. While a search is active it instead
+/// renders an AttributedString (built from the markdown) so individual matched
+/// words can be highlighted — MarkdownUI can't style text by content. Headings,
+/// bold/italic/inline-code and links survive; code blocks, tables and list markers
+/// flatten for the duration of the search.
+private struct SearchableSection: View {
+    let content: String
+    let query: String   // trimmed; empty == not searching
+    let isCurrent: Bool
+
+    var body: some View {
+        if query.isEmpty {
+            Markdown(content)
+                .markdownTheme(.seshat)
+                .textSelection(.enabled)
+        } else {
+            Text(highlighted())
+                .textSelection(.enabled)
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func highlighted() -> AttributedString {
+        let parsed = (try? AttributedString(
+            markdown: content,
+            options: .init(
+                allowsExtendedAttributes: true,
+                interpretedSyntax: .full,
+                failurePolicy: .returnPartiallyParsedIfPossible
+            )
+        )) ?? AttributedString(content)
+
+        // Rebuild block-by-block, inserting paragraph breaks (the markdown
+        // initializer encodes blocks as presentation intents, not newlines) and
+        // sizing headings.
+        var result = AttributedString()
+        var lastBlock: Int?
+        for run in parsed.runs {
+            let intent = run.presentationIntent
+            let blockID = intent?.components.first?.identity
+            if let lastBlock, blockID != lastBlock {
+                result += AttributedString("\n\n")
+            }
+            var slice = AttributedString(parsed[run.range])
+            applyBlockStyle(to: &slice, intent: intent)
+            result += slice
+            lastBlock = blockID ?? lastBlock
+        }
+
+        applyHighlight(to: &result)
+        return result
+    }
+
+    private func applyBlockStyle(to slice: inout AttributedString, intent: PresentationIntent?) {
+        slice.foregroundColor = Color.seshatBodyText
+        guard let intent else {
+            slice.font = .system(size: 16)
+            return
+        }
+        var headerSize: CGFloat?
+        var isCode = false
+        for component in intent.components {
+            switch component.kind {
+            case .header(let level):
+                headerSize = [1: 30, 2: 23, 3: 19].first { $0.key == level }?.value ?? 17
+            case .codeBlock:
+                isCode = true
+            default:
+                break
+            }
+        }
+        if let headerSize {
+            slice.font = .system(size: headerSize, weight: .semibold, design: .serif)
+            slice.foregroundColor = Color.seshatHeading
+        } else if isCode {
+            slice.font = .system(size: 14, design: .monospaced)
+        } else {
+            slice.font = .system(size: 16)
+        }
+    }
+
+    private func applyHighlight(to attr: inout AttributedString) {
+        let plain = String(attr.characters)
+        let color = isCurrent ? Color.seshatAccent.opacity(0.6) : Color.seshatAccentSoft
+        var searchRange = plain.startIndex..<plain.endIndex
+        while let match = plain.range(
+            of: query,
+            options: [.caseInsensitive, .diacriticInsensitive],
+            range: searchRange
+        ) {
+            let lo = plain.distance(from: plain.startIndex, to: match.lowerBound)
+            let hi = plain.distance(from: plain.startIndex, to: match.upperBound)
+            let chars = attr.characters
+            let aLo = chars.index(chars.startIndex, offsetBy: lo)
+            let aHi = chars.index(chars.startIndex, offsetBy: hi)
+            attr[aLo..<aHi].backgroundColor = color
+            if match.upperBound == match.lowerBound { break }
+            searchRange = match.upperBound..<plain.endIndex
+        }
+    }
 }
 
 private struct ReaderErrorView: View {
