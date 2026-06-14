@@ -19,13 +19,6 @@ struct MarkdownReader: View {
     @State private var searchMatches: [String] = []
     @State private var currentMatch: Int = 0
     @FocusState private var searchFocused: Bool
-    @State private var isEditing: Bool = false
-    @State private var editingSectionId: String?
-    @State private var sectionDrafts: [String: String] = [:]
-    @State private var activeDraft: String = ""
-    @State private var loadedModificationDate: Date?
-    @State private var showConflictAlert: Bool = false
-    @State private var conflictRemoteContent: String = ""
     @State private var showSharedDocs: Bool = false
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @Environment(AuthStore.self) private var authStore
@@ -108,13 +101,6 @@ struct MarkdownReader: View {
         .onExitCommand {
             if showSearch { closeSearch() }
         }
-        .alert("This file changed on disk", isPresented: $showConflictAlert) {
-            Button("Keep My Version", role: .destructive) { overwriteConflict() }
-            Button("Reload from Disk") { reloadFromDisk() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("“\(fileURL.lastPathComponent)” was modified by another app since you opened it. Keeping your version overwrites those changes.")
-        }
         .sheet(isPresented: $showSharedDocs) {
             SharedDocsView()
         }
@@ -152,29 +138,6 @@ struct MarkdownReader: View {
                         .symbolRenderingMode(.hierarchical)
                 }
                 .help(appearance.nextLabel)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { toggleEdit() }
-                } label: {
-                    Label(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark.circle" : "square.and.pencil")
-                }
-                .toggleStyle(.button)
-                .keyboardShortcut("e", modifiers: .command)
-                .disabled(loadError != nil)
-                .help(isEditing ? "Finish editing (⌘E)" : "Edit this document (⌘E)")
-            }
-            if isEditing || isDirty {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        Task { await save() }
-                    } label: {
-                        Label("Save", systemImage: "tray.and.arrow.down")
-                    }
-                    .keyboardShortcut("s", modifiers: .command)
-                    .disabled(!isDirty && editingSectionId == nil)
-                    .help("Save (⌘S)")
-                }
             }
             if authStore.isAuthenticated {
                 ToolbarItem(placement: .primaryAction) {
@@ -232,101 +195,33 @@ struct MarkdownReader: View {
 
     @ViewBuilder
     private func sectionView(_ section: MarkdownSection) -> some View {
-        let content = sectionDrafts[section.id] ?? section.content
-        if isEditing, editingSectionId == section.id {
-            SourceTextEditor(text: $activeDraft)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .id(section.id)
-        } else if isEditing {
-            // No .textSelection here — it captures the click at the AppKit level
-            // and the tap-to-edit never fires.
-            EditableBlock(content: content) { beginEditing(section) }
-                .id(section.id)
-        } else {
-            Markdown(content)
-                .markdownTheme(.seshat)
-                .textSelection(.enabled)
-                .id(section.id)
-        }
-    }
-
-    private func toggleEdit() {
-        if isEditing {
-            commitActiveEdit()
-            isEditing = false
-        } else {
-            isEditing = true
-        }
-    }
-
-    private func beginEditing(_ section: MarkdownSection) {
-        commitActiveEdit()
-        editingSectionId = section.id
-        activeDraft = sectionDrafts[section.id] ?? section.content
-    }
-
-    private func commitActiveEdit() {
-        guard let id = editingSectionId else { return }
-        let original = parsed.sections.first { $0.id == id }?.content ?? ""
-        if activeDraft == original {
-            sectionDrafts.removeValue(forKey: id)
-        } else {
-            sectionDrafts[id] = activeDraft
-        }
-        editingSectionId = nil
-    }
-
-    private var isDirty: Bool { !sectionDrafts.isEmpty }
-
-    private func reconstructedContent() -> String {
-        parsed.sections.map { sectionDrafts[$0.id] ?? $0.content }.joined(separator: "\n")
-    }
-
-    private func save() async {
-        commitActiveEdit()
-        guard isDirty else { return }
-        let newContent = reconstructedContent()
-        do {
-            let outcome = try DocumentWriter.write(
-                newContent,
-                to: fileURL,
-                expecting: loadedModificationDate
-            )
-            switch outcome {
-            case .wrote(let date):
-                applySaved(content: newContent, modificationDate: date)
-                present(toast: .init(kind: .success, message: "Saved"))
-            case .externalChange(let remote):
-                conflictRemoteContent = remote
-                showConflictAlert = true
+        Markdown(section.content)
+            .markdownTheme(.seshat)
+            .textSelection(.enabled)
+            .id(section.id)
+            .background {
+                if isSearching {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(highlightFill(for: section.id))
+                        .padding(.horizontal, -10)
+                        .padding(.vertical, -6)
+                }
             }
-        } catch {
-            present(toast: .init(kind: .failure, message: "Couldn't save — \(error.localizedDescription)"))
-        }
+            .animation(.easeOut(duration: 0.15), value: currentMatchSectionId)
     }
 
-    private func applySaved(content: String, modificationDate: Date?) {
-        rawContent = content
-        parsed = MarkdownParser.parse(content)
-        sectionDrafts = [:]
-        editingSectionId = nil
-        loadedModificationDate = modificationDate
+    private var isSearching: Bool { showSearch && !searchMatches.isEmpty }
+
+    private var matchedSectionIds: Set<String> { Set(searchMatches) }
+
+    private var currentMatchSectionId: String? {
+        searchMatches.indices.contains(currentMatch) ? searchMatches[currentMatch] : nil
     }
 
-    private func overwriteConflict() {
-        let newContent = reconstructedContent()
-        do {
-            try DocumentWriter.write(newContent, to: fileURL, expecting: nil)
-            applySaved(content: newContent, modificationDate: DocumentWriter.modificationDate(of: fileURL))
-            present(toast: .init(kind: .success, message: "Saved (overwrote external changes)"))
-        } catch {
-            present(toast: .init(kind: .failure, message: "Couldn't save — \(error.localizedDescription)"))
-        }
-    }
-
-    private func reloadFromDisk() {
-        applySaved(content: conflictRemoteContent, modificationDate: DocumentWriter.modificationDate(of: fileURL))
-        present(toast: .init(kind: .success, message: "Reloaded from disk"))
+    private func highlightFill(for id: String) -> Color {
+        if id == currentMatchSectionId { return Color.seshatAccentSoft.opacity(0.5) }
+        if matchedSectionIds.contains(id) { return Color.seshatAccentSoft.opacity(0.18) }
+        return .clear
     }
 
     private func load() async {
@@ -335,10 +230,6 @@ struct MarkdownReader: View {
             rawContent = raw
             parsed = MarkdownParser.parse(raw)
             loadError = nil
-            loadedModificationDate = DocumentWriter.modificationDate(of: fileURL)
-            sectionDrafts = [:]
-            editingSectionId = nil
-            isEditing = false
         } catch {
             rawContent = ""
             loadError = error
@@ -348,7 +239,7 @@ struct MarkdownReader: View {
     private func share() async {
         guard !isSharing else { return }
         let title = fileURL.deletingPathExtension().lastPathComponent
-        let content = isDirty ? reconstructedContent() : rawContent
+        let content = rawContent
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedContent.isEmpty else {
             present(toast: .init(kind: .failure, message: "Nothing to share — file is empty."))
@@ -467,31 +358,6 @@ private extension String {
 private struct ReaderLoadKey: Hashable {
     let url: URL
     let tick: Int
-}
-
-/// A rendered section that, in edit mode, is a click target. Renders with the
-/// normal theme (no text selection, so the click reaches us) and shows only a text
-/// cursor on hover — no block highlight, so editing feels direct rather than
-/// block-based. Tapping swaps it for the source editor in place.
-private struct EditableBlock: View {
-    let content: String
-    let onTap: () -> Void
-
-    var body: some View {
-        Markdown(content)
-            .markdownTheme(.seshat)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onContinuousHover { phase in
-                switch phase {
-                case .active: NSCursor.iBeam.set()
-                case .ended: NSCursor.arrow.set()
-                }
-            }
-            // highPriority so the tap wins over MarkdownUI's internal gestures,
-            // which were swallowing onTapGesture / Button taps.
-            .highPriorityGesture(TapGesture().onEnded(onTap))
-    }
 }
 
 private struct ReaderErrorView: View {

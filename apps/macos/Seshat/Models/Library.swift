@@ -78,35 +78,6 @@ final class Library {
         }
     }
 
-    /// Writes editor content back to a library file, refusing to clobber an edit
-    /// made on disk since `expectedModification`. Returns `nil` only on a hard
-    /// failure (sets `lastError`); a detected conflict comes back as
-    /// `.externalChange` for the caller to resolve.
-    func write(
-        file fileURL: URL,
-        content: String,
-        expectedModification: Date?
-    ) -> WriteOutcome? {
-        lastError = nil
-        let target = fileURL.standardizedFileURL
-        guard isUnderLibraryRoot(target) else {
-            lastError = .notInLibrary
-            return nil
-        }
-        do {
-            let outcome = try DocumentWriter.write(content, to: target, expecting: expectedModification)
-            if case .wrote = outcome {
-                seshatLog("Library.write — \(target.lastPathComponent)")
-                refresh()
-            }
-            return outcome
-        } catch {
-            seshatLog("Library.write — failed: \(error)")
-            lastError = .writeFailed
-            return nil
-        }
-    }
-
     @discardableResult
     func createFile(named rawName: String, in folderURL: URL) -> URL? {
         lastError = nil
