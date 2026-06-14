@@ -24,7 +24,12 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>();
 
 authRoute.get("/google", async (c) => {
   const sourceParam = c.req.query("source");
-  const source: AuthSource = sourceParam === "macos" ? "macos" : "web";
+  const source: AuthSource =
+    sourceParam === "macos"
+      ? "macos"
+      : sourceParam === "web-token"
+        ? "web-token"
+        : "web";
   const state = await issueOAuthState(source);
   return c.redirect(buildAuthorizeUrl(state));
 });
@@ -89,6 +94,15 @@ authRoute.get("/google/callback", async (c) => {
 
   if (source === "macos") {
     const target = `${env.AUTH_MACOS_REDIRECT}#token=${encodeURIComponent(sessionToken)}`;
+    return c.redirect(target);
+  }
+
+  if (source === "web-token") {
+    // Hand the token to the web app via URL fragment (kept out of server logs,
+    // mirroring the macOS flow). The web app stores it in a first-party
+    // httpOnly cookie on its own origin, then proxies API calls with a Bearer
+    // token — avoiding cross-site SameSite=Lax cookie restrictions.
+    const target = `${env.WEB_BASE_URL}/auth/callback#token=${encodeURIComponent(sessionToken)}`;
     return c.redirect(target);
   }
 

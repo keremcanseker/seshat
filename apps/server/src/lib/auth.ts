@@ -5,7 +5,7 @@ const ALG = "HS256";
 const JWT_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 30;
 const STATE_TTL_SECONDS = 600;
 
-export type AuthSource = "macos" | "web";
+export type AuthSource = "macos" | "web" | "web-token";
 
 export type SessionPayload = {
   sub: string;
@@ -53,7 +53,11 @@ export async function verifyOAuthState(state: string): Promise<{ source: AuthSou
   const payload = (await verify(state, env.AUTH_JWT_SECRET, ALG)) as unknown as {
     source: AuthSource;
   };
-  if (payload.source !== "macos" && payload.source !== "web") {
+  if (
+    payload.source !== "macos" &&
+    payload.source !== "web" &&
+    payload.source !== "web-token"
+  ) {
     throw new Error("invalid state source");
   }
   return { source: payload.source };
