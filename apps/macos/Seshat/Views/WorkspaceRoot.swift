@@ -65,7 +65,7 @@ private struct EmptyDetail: View {
                 Text("No document selected")
                     .font(.system(size: 16, weight: .medium, design: .serif))
                     .foregroundStyle(Color.seshatMuted)
-                Text("Pick a file from the sidebar — or use `seshat open <file.md>` from the terminal.")
+                Text("Pick a file from the sidebar, or use `seshat open <file.md>` from the terminal.")
                     .font(.system(size: 13))
                     .foregroundStyle(Color.seshatFaint)
                     .multilineTextAlignment(.center)

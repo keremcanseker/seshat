@@ -166,7 +166,7 @@ export function SeshatDocChrome({ entries }: Props) {
           </button>
         </div>
 
-        {/* Desktop inline panel — hidden under the breakpoint by CSS. */}
+        {/* Desktop inline panel, hidden under the breakpoint by CSS. */}
         {hasOutline && showOutline ? (
           <nav
             aria-label="Document outline"
@@ -178,7 +178,7 @@ export function SeshatDocChrome({ entries }: Props) {
         ) : null}
       </div>
 
-      {/* Mobile overlay — only rendered on compact viewports, hidden by default. */}
+      {/* Mobile overlay, only rendered on compact viewports, hidden by default. */}
       {hasOutline && mobileOverlayOpen ? (
         <div className="seshat-doc-chrome-overlay" role="presentation">
           <button

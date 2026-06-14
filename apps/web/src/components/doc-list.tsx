@@ -19,7 +19,7 @@ const dateFmt = new Intl.DateTimeFormat("en-US", {
 
 function formatDate(value: string): string {
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? "—" : dateFmt.format(d);
+  return Number.isNaN(d.getTime()) ? "" : dateFmt.format(d);
 }
 
 export function DocList({ docs }: Props) {
@@ -65,7 +65,7 @@ function DocRow({ doc }: { doc: SharedDocSummary }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      // clipboard unavailable — no-op
+      // clipboard unavailable, no-op
     }
   }
 

@@ -9,7 +9,7 @@ struct EmptySidebar: View {
             Text("No documents yet")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color.seshatMuted)
-            Text("Create a folder, then drop files onto it—or drag documents between folders in the list.")
+            Text("Create a folder, then drop files onto it, or drag documents between folders in the list.")
                 .font(.system(size: 11))
                 .foregroundStyle(Color.seshatFaint)
                 .multilineTextAlignment(.center)

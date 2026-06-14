@@ -231,7 +231,7 @@ struct MarkdownReader: View {
         let content = rawContent
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedContent.isEmpty else {
-            present(toast: .init(kind: .failure, message: "Nothing to share — file is empty."))
+            present(toast: .init(kind: .failure, message: "Nothing to share, the file is empty."))
             return
         }
         isSharing = true
@@ -247,7 +247,7 @@ struct MarkdownReader: View {
                 openURL: URL(string: response.url)
             ))
         } catch APIError.unauthorized {
-            present(toast: .init(kind: .failure, message: "Session expired — please sign in again."))
+            present(toast: .init(kind: .failure, message: "Session expired. Please sign in again."))
         } catch {
             present(toast: .init(kind: .failure, message: error.localizedDescription))
         }

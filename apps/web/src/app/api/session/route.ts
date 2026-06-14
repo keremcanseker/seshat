@@ -5,8 +5,8 @@ import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/session";
 /**
  * First-party session cookie endpoint for the web app.
  *
- * POST { token } — set after the OAuth callback hands back a session JWT.
- * DELETE         — clear on logout.
+ * POST { token }: set after the OAuth callback hands back a session JWT.
+ * DELETE: clear on logout.
  *
  * The token is stored httpOnly so client JS can never read it; authenticated
  * API calls are made server-side (see src/lib/auth.ts).

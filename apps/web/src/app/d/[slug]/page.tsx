@@ -15,10 +15,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const doc = await fetchSharedDoc(slug).catch(() => null);
   if (!doc) {
-    return { title: "Document not found — Seshat" };
+    return { title: "Document not found · Seshat" };
   }
   return {
-    title: `${doc.title} — Seshat`,
+    title: `${doc.title} · Seshat`,
     description: `Shared markdown document on Seshat.`,
     openGraph: { title: doc.title, type: "article", siteName: "Seshat" },
     twitter: { card: "summary", title: doc.title },

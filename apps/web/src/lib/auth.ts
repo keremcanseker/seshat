@@ -14,7 +14,7 @@ import {
  * `${WEB_BASE_URL}/auth/callback#token=<jwt>`. The callback page POSTs the token
  * to `/api/session`, which stores it in a *first-party* httpOnly cookie on the
  * web app's own origin. All authenticated API calls are then made here,
- * server-side, forwarding the token as `Authorization: Bearer <jwt>` — which
+ * server-side, forwarding the token as `Authorization: Bearer <jwt>`, which
  * sidesteps cross-site SameSite=Lax cookie restrictions between the web origin
  * and the API origin.
  */

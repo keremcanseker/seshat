@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Seshat — palette mirrors apps/macos/Seshat/Theme/SeshatColors.swift
+ * Seshat: palette mirrors apps/macos/Seshat/Theme/SeshatColors.swift
  * Typography pairs system-native fonts on Apple platforms with web fallbacks
  * loaded by next/font (variables: --font-newsreader, --font-inter, --font-mono-display).
  */
@@ -291,14 +291,14 @@
 
 /*
  * Seshat shared-doc renderer (/d/[slug]).
- * Mirrors apps/macos/Seshat/Theme/SeshatTheme.swift — type scale, margins,
+ * Mirrors apps/macos/Seshat/Theme/SeshatTheme.swift: type scale, margins,
  * 720px prose / 920px content widths, warm-gold accents, horizontal-only tables.
  */
 :root {
   --seshat-star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M14 0 L16.5 8.82 L24.95 5.27 L19.61 12.72 L27.65 17.12 L18.5 17.58 L20.07 26.61 L14 19.75 L7.93 26.61 L9.5 17.58 L0.35 17.12 L8.39 12.72 L3.05 5.27 L11.5 8.82 Z' fill='black'/%3E%3C/svg%3E");
 }
 
-/* Hide page scrollbar when viewing a shared doc — matches the macOS reader's
+/* Hide page scrollbar when viewing a shared doc, matches the macOS reader's
    scrollIndicators(.never). Scroll still works, just no visible track. */
 html:has(.seshat-doc-page),
 body:has(.seshat-doc-page) {
@@ -345,7 +345,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
   }
 
   /* Fixed chrome on the right: toolbar + outline, flush right.
-     Mirrors apps/macos/Seshat/Views/MarkdownOutline.swift —
+     Mirrors apps/macos/Seshat/Views/MarkdownOutline.swift:
      200pt panel, vertical spine, single-line entries, depth-driven indent. */
   .seshat-doc-chrome {
     position: fixed;
@@ -500,7 +500,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     }
   }
 
-  /* Mobile outline overlay — hidden by default, revealed via the toolbar
+  /* Mobile outline overlay, hidden by default, revealed via the toolbar
      toggle. Slides in from the right as a calm paper sheet. */
   .seshat-doc-chrome-overlay {
     position: fixed;

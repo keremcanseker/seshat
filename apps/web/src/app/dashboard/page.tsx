@@ -7,7 +7,7 @@ import { getCurrentUser, getMyDocs } from "@/lib/auth";
 import { logoutAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Your library — Seshat",
+  title: "Your library · Seshat",
 };
 
 export default async function DashboardPage() {

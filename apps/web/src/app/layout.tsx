@@ -25,7 +25,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Seshat a reading room for markdown",
   description:
-    "A native macOS app and CLI for reading and sharing markdown — built so long-form .md files actually feel good to read, and so any developer can publish one with a single terminal command.",
+    "A native macOS app and CLI for reading and sharing markdown, built so long-form .md files actually feel good to read, and so any developer can publish one with a single terminal command.",
   metadataBase: new URL("https://seshat.app"),
   openGraph: {
     title: "Seshat a reading room for markdown",

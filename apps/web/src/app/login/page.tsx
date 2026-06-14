@@ -6,7 +6,7 @@ import { SeshatMark } from "@/components/seshat-mark";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Sign in — Seshat",
+  title: "Sign in · Seshat",
 };
 
 export default async function LoginPage() {
