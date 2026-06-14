@@ -1,7 +1,10 @@
 import { DownloadButton } from "@/components/download-button";
 import { SeshatMark } from "@/components/seshat-mark";
 
-const DOWNLOAD_URL = "/Seshat.dmg";
+// Always resolves to the newest published GitHub release's DMG, so a tag push
+// (which runs release.yml → uploads Seshat.dmg) is instantly the live download.
+const DOWNLOAD_URL =
+  "https://github.com/keremcanseker/seshat/releases/latest/download/Seshat.dmg";
 
 export default function Home() {
   return (
