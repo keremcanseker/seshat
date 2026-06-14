@@ -23,7 +23,6 @@ struct MarkdownReader: View {
     @State private var editingSectionId: String?
     @State private var sectionDrafts: [String: String] = [:]
     @State private var activeDraft: String = ""
-    @FocusState private var editorFocused: Bool
     @State private var loadedModificationDate: Date?
     @State private var showConflictAlert: Bool = false
     @State private var conflictRemoteContent: String = ""
@@ -235,14 +234,9 @@ struct MarkdownReader: View {
     private func sectionView(_ section: MarkdownSection) -> some View {
         let content = sectionDrafts[section.id] ?? section.content
         if isEditing, editingSectionId == section.id {
-            TextField("", text: $activeDraft, axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(.system(size: 16))
-                .foregroundStyle(Color.seshatBodyText)
-                .lineSpacing(6)
-                .focused($editorFocused)
+            SourceTextEditor(text: $activeDraft)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .id(section.id)
-                .onAppear { editorFocused = true }
         } else if isEditing {
             // No .textSelection here — it captures the click at the AppKit level
             // and the tap-to-edit never fires.
@@ -269,7 +263,6 @@ struct MarkdownReader: View {
         commitActiveEdit()
         editingSectionId = section.id
         activeDraft = sectionDrafts[section.id] ?? section.content
-        editorFocused = true
     }
 
     private func commitActiveEdit() {
