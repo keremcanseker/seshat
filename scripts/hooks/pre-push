@@ -23,10 +23,21 @@ while read -r local_ref local_oid _remote_ref remote_oid; do
     [ "$local_ref" = "refs/heads/main" ] || continue
     [ "$local_oid" = "$ZERO" ] && continue   # branch deletion — nothing to build
 
+    # Decide with `git diff --quiet` (exit 1 == changed). No `| grep -q` pipe:
+    # grep -q closes the pipe on its first match, git diff then dies with SIGPIPE,
+    # and under `pipefail` that flips the whole pipeline to failure — which
+    # silently skipped a real release once. The pipe is gone, so is the race.
     if [ "$remote_oid" = "$ZERO" ]; then
         publish=1                            # first push of main — always release
-    elif git -C "$ROOT" diff --name-only "$remote_oid..$local_oid" -- apps/macos | grep -q .; then
+        echo "› pre-push: first push of main — will release"
+    elif ! git -C "$ROOT" cat-file -e "${remote_oid}^{commit}" 2>/dev/null; then
+        publish=1                            # remote tip unknown locally — can't diff; release to be safe
+        echo "› pre-push: remote tip ${remote_oid:0:7} not present locally — will release (fail-safe)"
+    elif ! git -C "$ROOT" diff --quiet "$remote_oid" "$local_oid" -- apps/macos; then
         publish=1
+        echo "› pre-push: apps/macos changed in ${remote_oid:0:7}..${local_oid:0:7} — will release"
+    else
+        echo "› pre-push: no apps/macos changes in ${remote_oid:0:7}..${local_oid:0:7}"
     fi
 done
 
