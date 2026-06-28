@@ -27,6 +27,7 @@ private struct WorkspaceRootContainer: View {
     @Environment(AppRouter.self) private var router
     @Environment(AuthStore.self) private var authStore
     @Environment(UpdateChecker.self) private var updateChecker
+    @Environment(UpdaterController.self) private var updaterController
     @Environment(\.openWindow) private var openWindow
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
 
@@ -40,8 +41,12 @@ private struct WorkspaceRootContainer: View {
         }
         .overlay(alignment: .bottom) {
             if let info = updateChecker.available {
-                UpdateBanner(info: info, onDismiss: updateChecker.dismiss)
-                    .animation(.easeOut(duration: 0.25), value: updateChecker.available)
+                UpdateBanner(
+                    info: info,
+                    onUpdate: updaterController.checkForUpdates,
+                    onDismiss: updateChecker.dismiss
+                )
+                .animation(.easeOut(duration: 0.25), value: updateChecker.available)
             }
         }
         .preferredColorScheme(appearance.colorScheme)

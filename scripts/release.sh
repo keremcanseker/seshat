@@ -14,6 +14,12 @@
 
 set -euo pipefail
 
+# SwiftPM caches packages as bare git repos. If the machine's git has
+# `safe.bareRepository=explicit` set (a hardening choice), xcodebuild can't
+# resolve packages ("cannot use bare repository"). Allow it for this process's
+# git subprocesses only, without touching the user's persistent config.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.bareRepository GIT_CONFIG_VALUE_0=all
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Seshat"
 SCHEME="Seshat"
@@ -74,8 +80,25 @@ if [ -n "${DEVELOPER_ID:-}" ]; then
         SIGN_ARGS+=(--identifier "com.keremcan.seshat")
     fi
 
-    # Sign nested executables first (just the bundled CLI shell script — but it's not Mach-O,
-    # so codesign is a no-op on it. Sign the app bundle itself.)
+    # Sparkle ships a framework with nested helpers (XPC services, Updater.app,
+    # Autoupdate). Every Mach-O / bundle must be Developer-ID signed with the
+    # hardened runtime + a timestamp, deepest first, or notarization rejects the
+    # app. The bundled CLI is a shell script (not Mach-O), so it needs no signing.
+    SPARKLE_FW="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+    if [ -d "$SPARKLE_FW" ]; then
+        echo "› signing Sparkle helpers"
+        SPARKLE_VERSIONS="$SPARKLE_FW/Versions"
+        VDIR="$(ls -d "$SPARKLE_VERSIONS"/*/ 2>/dev/null | grep -v Current | head -1)"
+        for inner in \
+            "$VDIR/XPCServices/Installer.xpc" \
+            "$VDIR/XPCServices/Downloader.xpc" \
+            "$VDIR/Updater.app" \
+            "$VDIR/Autoupdate"; do
+            [ -e "$inner" ] && codesign "${SIGN_ARGS[@]}" "$inner"
+        done
+        codesign "${SIGN_ARGS[@]}" "$SPARKLE_FW"
+    fi
+
     codesign "${SIGN_ARGS[@]}" "$APP_PATH"
     codesign --verify --strict --verbose=2 "$APP_PATH"
 

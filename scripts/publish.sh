@@ -51,6 +51,27 @@ VERSION="$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$DIST/
 # 2. Version manifest the server's /version reads.
 printf '{"version":"%s","notes":null}\n' "$VERSION" > "$DIST/latest.json"
 
+# 2b. Sparkle appcast — signs the DMG with the EdDSA private key (in this Mac's
+# Keychain, created once via generate_keys) and emits appcast.xml. The in-app
+# updater reads it to download, verify, swap the bundle, and relaunch in place.
+SPARKLE_BIN="$ROOT/scripts/.sparkle-tools/bin"
+if [ ! -x "$SPARKLE_BIN/generate_appcast" ]; then
+    echo "› fetching Sparkle tools"
+    mkdir -p "$ROOT/scripts/.sparkle-tools"
+    curl -sSL -o "$ROOT/scripts/.sparkle-tools/sparkle.tar.xz" \
+        "https://github.com/sparkle-project/Sparkle/releases/download/2.6.4/Sparkle-2.6.4.tar.xz"
+    tar -xf "$ROOT/scripts/.sparkle-tools/sparkle.tar.xz" -C "$ROOT/scripts/.sparkle-tools" bin
+fi
+
+# Must match SUFeedURL's host in project.yml — where the DMG is served from.
+DOWNLOAD_PREFIX="${SPARKLE_DOWNLOAD_PREFIX:-https://pub-06b8ee53eff44617a47e278dbf520d1f.r2.dev}"
+APPCAST_DIR="$DIST/appcast"
+rm -rf "$APPCAST_DIR"; mkdir -p "$APPCAST_DIR"
+cp "$DMG" "$APPCAST_DIR/"
+echo "› generating Sparkle appcast (signing with EdDSA key)"
+"$SPARKLE_BIN/generate_appcast" --download-url-prefix "$DOWNLOAD_PREFIX/" "$APPCAST_DIR"
+[ -f "$APPCAST_DIR/appcast.xml" ] || { echo "error: appcast.xml not produced" >&2; exit 1; }
+
 # 3. Upload (stable keys, overwritten = always latest).
 export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID"
 export AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY"
@@ -64,6 +85,10 @@ aws s3 cp "$DMG" "s3://$S3_BUCKET/Seshat.dmg" \
 aws s3 cp "$DIST/latest.json" "s3://$S3_BUCKET/latest.json" \
     --endpoint-url "$S3_ENDPOINT" \
     --content-type application/json \
+    --cache-control "no-cache"
+aws s3 cp "$APPCAST_DIR/appcast.xml" "s3://$S3_BUCKET/appcast.xml" \
+    --endpoint-url "$S3_ENDPOINT" \
+    --content-type application/xml \
     --cache-control "no-cache"
 
 echo ""

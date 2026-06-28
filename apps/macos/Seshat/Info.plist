@@ -55,6 +55,12 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Kerem Can Seker. All rights reserved.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>https://pub-06b8ee53eff44617a47e278dbf520d1f.r2.dev/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>d20D7B1PXpBbMWMW6j+iIg/HZhhME5RwHSMfM44Apq8=</string>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>

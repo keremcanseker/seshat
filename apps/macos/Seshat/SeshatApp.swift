@@ -13,14 +13,19 @@ struct SeshatApp: App {
             .environment(appDelegate.router)
             .environment(appDelegate.authStore)
             .environment(appDelegate.updateChecker)
+            .environment(appDelegate.updaterController)
             .environment(appDelegate.readState)
             .commands {
-                SeshatCommands(router: appDelegate.router)
+                SeshatCommands(
+                    router: appDelegate.router,
+                    updaterController: appDelegate.updaterController
+                )
             }
         ReaderScene()
             .environment(appDelegate.router)
             .environment(appDelegate.authStore)
             .environment(appDelegate.updateChecker)
+            .environment(appDelegate.updaterController)
             .environment(appDelegate.readState)
     }
 }

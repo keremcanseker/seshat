@@ -44,3 +44,6 @@ design
 # Release artifacts (built by scripts/release.sh)
 /dist
 scripts/release.env
+
+# Sparkle release tooling (binaries; private signing key lives in Keychain)
+scripts/.sparkle-tools/

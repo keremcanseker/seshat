@@ -1,8 +1,8 @@
-import AppKit
 import SwiftUI
 
 struct UpdateBanner: View {
     let info: UpdateInfo
+    let onUpdate: () -> Void
     let onDismiss: () -> Void
 
     var body: some View {
@@ -15,9 +15,7 @@ struct UpdateBanner: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Color.seshatBodyText)
 
-            Button("Download") {
-                NSWorkspace.shared.open(info.downloadURL)
-            }
+            Button("Update", action: onUpdate)
             .buttonStyle(.borderless)
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(Color.seshatAccent)

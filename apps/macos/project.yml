@@ -33,6 +33,9 @@ packages:
   MarkdownUI:
     url: https://github.com/gonzalezreal/swift-markdown-ui
     from: 2.4.0
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.4
 
 targets:
   Seshat:
@@ -53,6 +56,9 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        SUFeedURL: https://pub-06b8ee53eff44617a47e278dbf520d1f.r2.dev/appcast.xml
+        SUPublicEDKey: d20D7B1PXpBbMWMW6j+iIg/HZhhME5RwHSMfM44Apq8=
+        SUEnableAutomaticChecks: false
         LSApplicationCategoryType: public.app-category.productivity
         NSHumanReadableCopyright: "Copyright © 2026 Kerem Can Seker. All rights reserved."
         CFBundleURLTypes:
@@ -97,3 +103,5 @@ targets:
     dependencies:
       - package: MarkdownUI
         product: MarkdownUI
+      - package: Sparkle
+        product: Sparkle

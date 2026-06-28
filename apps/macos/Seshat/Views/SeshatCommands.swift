@@ -4,9 +4,14 @@ import UniformTypeIdentifiers
 
 struct SeshatCommands: Commands {
     let router: AppRouter
+    let updaterController: UpdaterController
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") {
+                updaterController.checkForUpdates()
+            }
+
             Button("Install Terminal Command…") {
                 CLIInstaller.reinstallFromMenu()
             }
