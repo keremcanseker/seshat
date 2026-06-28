@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct Sidebar: View {
     let library: Library
     @Binding var selection: URL?
+    @Environment(ReadState.self) private var readState
     var onRefresh: () -> Void = {}
     var onRevealLibrary: () -> Void = {}
     var onURLRenamed: (URL, URL) -> Void = { _, _ in }
@@ -230,6 +231,16 @@ struct Sidebar: View {
         }
 
         Divider()
+
+        if readState.isRead(file.url) {
+            Button("Mark as Unread", systemImage: "circle") {
+                readState.markUnread(file.url)
+            }
+        } else {
+            Button("Mark as Read", systemImage: "circle.fill") {
+                readState.markRead(file.url)
+            }
+        }
 
         Button("Rename…", systemImage: "pencil") {
             presentRename(file: file)

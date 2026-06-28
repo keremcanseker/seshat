@@ -22,6 +22,7 @@ struct MarkdownReader: View {
     @State private var showSharedDocs: Bool = false
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @Environment(AuthStore.self) private var authStore
+    @Environment(ReadState.self) private var readState
 
     private static let outlineMinWidth: CGFloat = 1080
 
@@ -33,6 +34,11 @@ struct MarkdownReader: View {
                 } else {
                     ForEach(parsed.sections) { section in
                         sectionView(section)
+                    }
+                    if !parsed.sections.isEmpty {
+                        Color.clear
+                            .frame(height: 1)
+                            .onAppear { readState.markRead(fileURL) }
                     }
                 }
             }

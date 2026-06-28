@@ -6,6 +6,7 @@ struct WorkspaceRoot: View {
     @State private var reloadTick: Int = 0
 
     @Environment(AppRouter.self) private var router
+    @Environment(ReadState.self) private var readState
 
     var body: some View {
         NavigationSplitView {
@@ -43,6 +44,7 @@ struct WorkspaceRoot: View {
 
     private func handleFileURLChange(from oldURL: URL, to newURL: URL) {
         router.remapReaderFileURL(from: oldURL, to: newURL)
+        readState.remap(from: oldURL, to: newURL)
         if selection?.seshatMatches(oldURL) == true {
             reloadTick &+= 1
         }
@@ -50,6 +52,7 @@ struct WorkspaceRoot: View {
 
     private func handleItemDeleted(_ url: URL) {
         router.closeReaders(for: url)
+        readState.forget(url)
         if selection?.seshatMatches(url) == true {
             selection = nil
         }

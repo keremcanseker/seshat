@@ -13,6 +13,7 @@ struct SeshatApp: App {
             .environment(appDelegate.router)
             .environment(appDelegate.authStore)
             .environment(appDelegate.updateChecker)
+            .environment(appDelegate.readState)
             .commands {
                 SeshatCommands(router: appDelegate.router)
             }
@@ -20,5 +21,6 @@ struct SeshatApp: App {
             .environment(appDelegate.router)
             .environment(appDelegate.authStore)
             .environment(appDelegate.updateChecker)
+            .environment(appDelegate.readState)
     }
 }

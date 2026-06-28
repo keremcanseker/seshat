@@ -5,6 +5,7 @@ final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
     let authStore: AuthStore
     let router: AppRouter
     let updateChecker = UpdateChecker()
+    let readState = ReadState()
 
     override init() {
         let authStore = AuthStore()
