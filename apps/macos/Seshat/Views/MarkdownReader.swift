@@ -126,15 +126,14 @@ struct MarkdownReader: View {
                 }
                 .help(fileURL.path)
             }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
                 Toggle(isOn: $showOutline.animation(.easeInOut(duration: 0.22))) {
                     Label("Outline", systemImage: "list.bullet.indent")
                 }
                 .toggleStyle(.button)
                 .disabled(parsed.outline.isEmpty || available.width < Self.outlineMinWidth)
                 .help(outlineToggleHelp)
-            }
-            ToolbarItem(placement: .primaryAction) {
+
                 Button {
                     withAnimation(.easeInOut(duration: 0.22)) {
                         appearance = appearance.toggled
@@ -144,9 +143,8 @@ struct MarkdownReader: View {
                         .symbolRenderingMode(.hierarchical)
                 }
                 .help(appearance.nextLabel)
-            }
-            if authStore.isAuthenticated {
-                ToolbarItem(placement: .primaryAction) {
+
+                if authStore.isAuthenticated {
                     Button(action: { Task { await share() } }) {
                         if isSharing {
                             ProgressView()
@@ -158,8 +156,7 @@ struct MarkdownReader: View {
                     }
                     .disabled(isSharing || loadError != nil || rawContent.isEmpty)
                     .help("Publish to seshat.page and copy the link")
-                }
-                ToolbarItem(placement: .primaryAction) {
+
                     UserMenu(onShowSharedDocs: { showSharedDocs = true })
                 }
             }
