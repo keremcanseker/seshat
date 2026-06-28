@@ -64,7 +64,7 @@ if [ ! -x "$SPARKLE_BIN/generate_appcast" ]; then
 fi
 
 # Must match SUFeedURL's host in project.yml — where the DMG is served from.
-DOWNLOAD_PREFIX="${SPARKLE_DOWNLOAD_PREFIX:-https://pub-06b8ee53eff44617a47e278dbf520d1f.r2.dev}"
+DOWNLOAD_PREFIX="${SPARKLE_DOWNLOAD_PREFIX:-https://dl.seshat.page}"
 APPCAST_DIR="$DIST/appcast"
 rm -rf "$APPCAST_DIR"; mkdir -p "$APPCAST_DIR"
 cp "$DMG" "$APPCAST_DIR/"

@@ -58,7 +58,7 @@
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
 	<key>SUFeedURL</key>
-	<string>https://pub-06b8ee53eff44617a47e278dbf520d1f.r2.dev/appcast.xml</string>
+	<string>https://dl.seshat.page/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>d20D7B1PXpBbMWMW6j+iIg/HZhhME5RwHSMfM44Apq8=</string>
 	<key>UTImportedTypeDeclarations</key>
