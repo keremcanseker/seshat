@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
-import { Newsreader, Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
-  subsets: ["latin"],
-  display: "swap",
-  axes: ["opsz"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
   display: "swap",
 });
 
-const mono = JetBrains_Mono({
-  variable: "--font-mono-display",
+const mono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -43,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${inter.variable} ${mono.variable} h-full antialiased`}
+      className={`${geist.variable} ${mono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="bg-paper text-ink min-h-full font-sans">

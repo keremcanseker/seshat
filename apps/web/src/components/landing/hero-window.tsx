@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment } from "react";
 import {
   AlignLeft,
   FileText,
@@ -10,28 +10,41 @@ import {
   Share,
   Sun,
 } from "lucide-react";
+import type { LibraryFile, LibraryGroup } from "./hero-desktop";
 
 type Props = {
+  library: LibraryGroup[];
+  activeId: string;
+  read: string[];
+  onSelect: (id: string) => void;
   dark: boolean;
   sidebar: boolean;
   outline: boolean;
   onToggleOutline: () => void;
   onToggleDark: () => void;
   onShare: () => void;
-  doc: ReactNode;
 };
 
-// The reader window as it looks on a Mac. Token colors flip with the `dark`
-// class so the whole window re-skins when the room goes dark.
+// The reader window as it looks on a Mac. Colors are theme tokens; the `dark`
+// class flips them for the window alone, the page around it stays paper.
+// The sidebar is a real library: pick a file and the document, path and
+// outline follow.
 export function HeroWindow({
+  library,
+  activeId,
+  read,
+  onSelect,
   dark,
   sidebar,
   outline,
   onToggleOutline,
   onToggleDark,
   onShare,
-  doc,
 }: Props) {
+  const activeGroup =
+    library.find((g) => g.files.some((f) => f.id === activeId)) ?? library[0];
+  const active = activeGroup.files.find((f) => f.id === activeId) ?? activeGroup.files[0];
+
   return (
     <div className={`hero-window ${dark ? "dark" : ""}`}>
       {sidebar ? (
@@ -45,37 +58,40 @@ export function HeroWindow({
             <PanelLeft size={14} className="text-ink-muted ml-auto" />
           </div>
           <div className="text-ink-faint flex items-center gap-1.5 px-1 pb-3">
-            <span className="text-[10px] font-semibold tracking-[0.14em]">LIBRARY</span>
-            <span className="text-ink-muted flex items-center gap-1 text-[12px] font-medium">
-              <Folder size={12} /> Inbox ⌄
+            <span className="shrink-0 text-[10px] font-semibold tracking-[0.14em]">LIBRARY</span>
+            <span className="text-ink-muted flex min-w-0 items-center gap-1 text-[12px] font-medium">
+              <Folder size={12} className="shrink-0" />
+              <span className="truncate">{activeGroup.name}</span>
+              <span className="shrink-0">⌄</span>
             </span>
-            <span className="text-ink-faint ml-auto flex items-center gap-2">
+            <span className="text-ink-faint ml-auto flex shrink-0 items-center gap-2">
               <Plus size={13} />
               <Folder size={13} />
               <RefreshCw size={12} />
             </span>
           </div>
-          <div className="text-gold bg-gold/10 mb-2 flex w-fit items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.12em]">
-            <span className="bg-gold inline-block h-[7px] w-[7px] rounded-full" /> INBOX
-          </div>
           <div className="min-h-0 flex-1 overflow-hidden">
-            <Row name="claude-session-report" age="2h ago" unread />
-            <Row name="typography" age="1w ago" selected unread />
-            <Row name="reading-list" age="2w ago" unread />
-            <Group label="PRODUCT" />
-            <Row name="RFC-014-share-links" age="20h ago" unread />
-            <Row name="api-design-review" age="2d ago" />
-            <Row name="Q3-PLANNING-DRAFT" age="1w ago" unread />
-            <Row name="release-notes-0.4" age="3w ago" unread />
-            <Row name="pricing-research" age="2w ago" />
-            <Group label="ENGINEERING" />
-            <Row name="ARCHITECTURE_OVERVIEW" age="3w ago" />
-            <Row name="incident-postmortem-08-24" age="4d ago" unread />
-            <Row name="migration-runbook" age="1w ago" />
-            <Row name="agent-eval-results" age="2w ago" unread />
-            <Group label="PERSONAL" />
-            <Row name="conference-talk-outline" age="2mo ago" />
-            <Row name="half-finished-essay" age="3mo ago" />
+            {library.map((g, gi) => (
+              <Fragment key={g.name}>
+                {gi === 0 ? (
+                  <div className="text-gold bg-gold/10 mb-2 flex w-fit items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.12em]">
+                    <span className="bg-gold inline-block h-[7px] w-[7px] rounded-full" />
+                    {g.name.toUpperCase()}
+                  </div>
+                ) : (
+                  <Group label={g.name.toUpperCase()} />
+                )}
+                {g.files.map((f) => (
+                  <Row
+                    key={f.id}
+                    file={f}
+                    unread={Boolean(f.unread) && !read.includes(f.id)}
+                    selected={f.id === active.id}
+                    onClick={() => onSelect(f.id)}
+                  />
+                ))}
+              </Fragment>
+            ))}
           </div>
         </aside>
       ) : null}
@@ -89,8 +105,11 @@ export function HeroWindow({
               <span className="h-3 w-3 rounded-full bg-[#28c840]" />
             </div>
           ) : null}
-          <span className="text-ink-faint bg-ink/6 flex items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[11px]">
-            <Folder size={11} /> ~/Seshat/Inbox/typography.md
+          <span className="text-ink-faint bg-ink/6 flex min-w-0 items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[11px]">
+            <Folder size={11} className="shrink-0" />
+            <span className="truncate">
+              ~/Seshat/{activeGroup.name}/{active.name}.md
+            </span>
           </span>
           <div className="seshat-doc-chrome-toolbar ml-auto">
             <button
@@ -107,7 +126,7 @@ export function HeroWindow({
               onClick={onToggleDark}
               aria-label="Toggle theme"
             >
-              {dark ? <Moon size={13} /> : <Sun size={13} />}
+              {dark ? <Sun size={13} /> : <Moon size={13} />}
             </button>
             <button
               type="button"
@@ -119,18 +138,25 @@ export function HeroWindow({
             </button>
           </div>
         </div>
-        <div className={`landing-window min-h-0 flex-1 ${outline ? "has-outline" : ""}`}>
-          {doc}
+        {/* Keyed by file so switching documents resets the scroll position. */}
+        <div key={active.id} className={`landing-window min-h-0 flex-1 ${outline ? "has-outline" : ""}`}>
+          {active.doc}
         </div>
-        {outline ? (
+        {outline && active.outline.length > 0 ? (
           <nav className="hero-outline">
             <p className="seshat-doc-chrome-outline-label">OUTLINE</p>
             <ul className="seshat-doc-chrome-outline-list">
-              <li><span className="seshat-doc-chrome-outline-link is-d0 is-active">Typography for Long Do...</span></li>
-              <li><span className="seshat-doc-chrome-outline-link is-d1">What changes on paper</span></li>
-              <li><span className="seshat-doc-chrome-outline-link is-d1">Tables without the grid</span></li>
-              <li><span className="seshat-doc-chrome-outline-link is-d1">Lists</span></li>
-              <li><span className="seshat-doc-chrome-outline-link is-d1">Blockquotes</span></li>
+              {active.outline.slice(0, 7).map((entry, i) => (
+                <li key={entry.id}>
+                  <span
+                    className={`seshat-doc-chrome-outline-link block truncate ${
+                      entry.level <= 1 ? "is-d0" : "is-d1"
+                    } ${i === 0 ? "is-active" : ""}`}
+                  >
+                    {entry.text}
+                  </span>
+                </li>
+              ))}
             </ul>
           </nav>
         ) : null}
@@ -148,20 +174,22 @@ function Group({ label }: { label: string }) {
 }
 
 function Row({
-  name,
-  age,
+  file,
   unread,
   selected,
+  onClick,
 }: {
-  name: string;
-  age: string;
-  unread?: boolean;
-  selected?: boolean;
+  file: LibraryFile;
+  unread: boolean;
+  selected: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div
-      className={`flex items-center gap-1.5 rounded-md px-2 py-[4.5px] text-[12.5px] ${
-        selected ? "bg-ink/8" : ""
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full cursor-default items-center gap-1.5 rounded-md border-0 px-2 py-[4.5px] text-left text-[12.5px] ${
+        selected ? "bg-ink/8" : "hover:bg-ink/5 bg-transparent"
       }`}
     >
       <span
@@ -169,11 +197,11 @@ function Row({
           unread ? "bg-gold" : "bg-transparent"
         }`}
       />
-      <FileText size={11} className={unread ? "text-ink-muted" : "text-ink-faint"} />
+      <FileText size={11} className={`shrink-0 ${unread ? "text-ink-muted" : "text-ink-faint"}`} />
       <span className={`truncate ${unread ? "text-ink font-semibold" : "text-ink-muted"}`}>
-        {name}
+        {file.name}
       </span>
-      <span className="text-ink-faint ml-auto shrink-0 font-mono text-[10px]">{age}</span>
-    </div>
+      <span className="text-ink-faint ml-auto shrink-0 font-mono text-[10px]">{file.age}</span>
+    </button>
   );
 }
