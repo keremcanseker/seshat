@@ -231,6 +231,14 @@ struct MarkdownReader: View {
     private func share() async {
         guard !isSharing else { return }
         let title = fileURL.deletingPathExtension().lastPathComponent
+        // The file may have changed on disk since it was rendered (external editor);
+        // the FSEvents watcher only refreshes the sidebar. Re-read so we publish
+        // what's actually saved, and the reader catches up in the same step.
+        await load()
+        guard loadError == nil else {
+            present(toast: .init(kind: .failure, message: "Couldn't read the file before sharing."))
+            return
+        }
         let content = rawContent
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedContent.isEmpty else {
