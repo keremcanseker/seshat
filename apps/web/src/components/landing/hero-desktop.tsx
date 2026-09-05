@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlignLeft, Link2, Moon, PanelLeft, Sun } from "lucide-react";
-import { SeshatMark } from "@/components/seshat-mark";
 import { DownloadButton } from "@/components/download-button";
 import type { OutlineEntry } from "@/lib/extract-outline";
 import { HeroWindow } from "./hero-window";
@@ -77,25 +76,6 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
   return (
     <div>
       <div className="hero">
-        <div className="hero-top">
-          <div className="flex items-center gap-2.5">
-            <SeshatMark size={20} strokeWidth={1.4} />
-            <span className="font-heading text-ink text-[16px] font-semibold tracking-[-0.005em]">
-              Seshat
-            </span>
-            <span className="text-ink-muted hidden text-[14px] sm:inline">
-              a reading room for markdown
-            </span>
-          </div>
-          <DownloadButton
-            href={downloadHref}
-            className="hero-cta inline-flex h-8 shrink-0 items-center gap-2 rounded-full px-4 text-[13px] font-medium no-underline"
-          >
-            <AppleGlyph />
-            Download for macOS
-          </DownloadButton>
-        </div>
-
         <div className={`hero-stage ${dark ? "is-dark" : ""}`}>
           <Wall priority />
           {/* ponytail: night is the same painting under a CSS filter and an
@@ -103,27 +83,6 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
               when one exists and drop the filter. */}
           <div className="hero-night" aria-hidden>
             <Wall />
-          </div>
-
-          {/* Phones only: no window, no menu bar. The icon, one line of copy
-              and the download button sit over the sky, under the goddess. */}
-          <div className="hero-copy">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="hero-copy-icon" src="/apple-icon.png" alt="" width={72} height={72} draggable={false} />
-            <h1 className="font-heading text-ink m-0 text-balance text-[38px] leading-[1.08] font-semibold tracking-[-0.015em]">
-              A reading room for markdown.
-            </h1>
-            <p className="text-ink/80 mx-auto mt-4 mb-0 max-w-[32ch] text-[17px] leading-normal">
-              A native macOS reader with calm, book-like type. Your library is a folder. Any page becomes a link.
-            </p>
-            <DownloadButton
-              href={downloadHref}
-              className="hero-cta mt-7 inline-flex h-11 items-center gap-2 rounded-full px-6 text-[15px] font-medium no-underline"
-            >
-              <AppleGlyph />
-              Download for macOS
-            </DownloadButton>
-            <p className="text-ink/70 mt-3 mb-0 text-[13px]">Free. macOS 14 or later.</p>
           </div>
 
           <MenuBar />
@@ -169,6 +128,23 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
               <DockButton on={copied} onClick={share} label="Share">
                 <Link2 size={14} />
               </DockButton>
+            </div>
+
+            {/* On desktop the open document is the pitch, so only the button
+                and fine print show here. On phones the window and dock go and
+                this block, icon and headline included, is the whole hero. */}
+            <div className="hero-copy">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="hero-copy-icon" src="/apple-icon.png" alt="" width={72} height={72} draggable={false} />
+              <h1 className="hero-copy-title">A reading room for markdown.</h1>
+              <p className="hero-copy-lede">
+                A native macOS reader with calm, book-like type. Your library is a folder. Any page becomes a link.
+              </p>
+              <DownloadButton href={downloadHref} className="btn-ink hero-copy-cta">
+                <AppleGlyph />
+                Download for macOS
+              </DownloadButton>
+              <p className="hero-copy-fine">Free. macOS 14 or later.</p>
             </div>
           </div>
         </div>

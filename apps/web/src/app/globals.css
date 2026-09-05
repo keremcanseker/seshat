@@ -978,30 +978,19 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     transition: background-color 350ms ease, color 350ms ease, border-color 350ms ease;
   }
 
-  /* On desktop the macOS desktop is the whole first screen, full-bleed, and
-     the brand row with the download button sits under it. On phones the
-     order flips: brand row first, then the desktop as a rounded card. */
+  /* On desktop the macOS desktop is the whole first screen, full-bleed. The
+     strip under the window carries the brand, the demo controls and the
+     download button. On phones the window goes and copy takes its place. */
   .hero {
     display: flex;
     flex-direction: column;
   }
 
-  .hero-top {
-    order: 2;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 28px auto 0;
-    padding: 0 24px;
-  }
-
-  /* Download button: ink with a machined finish. Top-to-bottom gradient, a
-     hairline highlight along the top edge, a dark hairline along the bottom,
-     stacked soft drop shadows. Lifts on hover, sinks on press. */
-  .hero-cta {
+  /* Every filled button on the site: ink with a machined finish. Top-to-bottom
+     gradient, a hairline highlight along the top edge, a dark hairline along
+     the bottom, stacked soft drop shadows. Lifts on hover, sinks on press.
+     Shape and size come from the utilities on the element. */
+  .btn-ink {
     background: linear-gradient(180deg, #3b3431 0%, #221d1a 100%);
     color: var(--paper);
     box-shadow:
@@ -1013,7 +1002,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
   }
 
-  .hero-cta:hover {
+  .btn-ink:hover {
     background: linear-gradient(180deg, #46403c 0%, #2a2522 100%);
     transform: translateY(-1px);
     box-shadow:
@@ -1024,7 +1013,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
       0 8px 16px rgba(30, 20, 10, 0.12);
   }
 
-  .hero-cta:active {
+  .btn-ink:active {
     background: #1f1b18;
     transform: none;
     box-shadow:
@@ -1042,6 +1031,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     isolation: isolate;
     background: #d8c7a6;
   }
+
 
   .hero-wall {
     position: absolute;
@@ -1149,26 +1139,25 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
   .hero-mbi-cc { height: 12.4px; }
   .hero-mbi-spot { height: 13.6px; }
 
-  /* Sized against the stage so the window stays large at full-bleed and
-     proportional once the desktop settles into its card. Leaves the scribe
-     with the laptop on the left and the goddess on the right uncovered. */
+  /* The column on the desktop: window tucked under the menu bar, dock, then
+     the copy centred in what is left. Narrow enough to leave the scribe with
+     the laptop on the left and the goddess on the right uncovered. */
   .hero-app {
     position: absolute;
     left: 50%;
-    top: 10%;
-    bottom: 6.5%;
+    top: 44px;
+    bottom: 0;
     transform: translateX(-50%);
     width: min(1080px, 71%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
     z-index: 10;
   }
 
   .hero-window {
     width: 100%;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     display: flex;
     overflow: hidden;
@@ -1220,8 +1209,74 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     padding-right: 210px;
   }
 
+  /* On desktop the pitch is the open document itself, so under the dock there
+     is only the download button and its fine print, low on the screen: the
+     window takes everything above. Phones show the full copy (see below). */
+  .hero-copy {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 24px 28px;
+    text-align: center;
+    color: var(--ink);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .hero-copy-icon,
+  .hero-copy-title,
+  .hero-copy-lede {
+    display: none;
+  }
+
+  .hero-copy-icon {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 14px;
+    -webkit-user-drag: none;
+  }
+
+  .hero-copy-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(34px, 3.2vw, 46px);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .hero-copy-lede {
+    margin: 10px auto 0;
+    max-width: 44ch;
+    font-size: 17px;
+    line-height: 1.5;
+    color: color-mix(in oklab, var(--ink) 80%, transparent);
+    text-wrap: pretty;
+  }
+
+  .hero-copy-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .hero-copy-fine {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: color-mix(in oklab, var(--ink) 70%, transparent);
+  }
+
   .hero-dock {
     flex-shrink: 0;
+    margin-top: 14px;
     display: flex;
     align-items: center;
     gap: 2px;
@@ -1402,26 +1457,22 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     }
   }
 
-  /* Phones: the portrait painting fills the first screen and the copy
-     replaces the window. Brand row, menu bar and night layer go; the icon
-     and the download button live in the hero instead. */
-  .hero-copy {
-    display: none;
-  }
-
+  /* Phones: the portrait painting fills the first screen, the window, dock,
+     menu bar and night layer go, and the copy (icon included) sits over the
+     sky under the goddess. */
   @media (max-width: 768px) {
-    .hero-top,
     .hero-menubar,
     .hero-toast,
-    .hero-app,
-    .hero-night {
+    .hero-night,
+    .hero-window,
+    .hero-dock {
       display: none;
     }
     .hero-stage {
       height: 100vh;
       height: 100svh;
     }
-    /* A paper glow behind the copy so serif type reads over the scroll and
+    /* A paper glow behind the copy so the type reads over the scroll and
        the columns without darkening the painting. */
     .hero-stage::after {
       content: "";
@@ -1431,24 +1482,34 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
       pointer-events: none;
       z-index: 1;
     }
+    .hero-app {
+      top: 0;
+      left: 0;
+      width: 100%;
+      transform: none;
+    }
     .hero-copy {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      flex: 1;
       justify-content: center;
       padding: 0 24px 14vh;
-      text-align: center;
-      user-select: none;
-      -webkit-user-select: none;
     }
-    .hero-copy-icon {
-      width: 72px;
-      height: 72px;
-      margin-bottom: 14px;
-      -webkit-user-drag: none;
+    .hero-copy-icon,
+    .hero-copy-lede {
+      display: block;
+    }
+    .hero-copy-title {
+      display: block;
+      font-size: 38px;
+    }
+    .hero-copy-lede {
+      margin-top: 16px;
+      max-width: 32ch;
+    }
+    .hero-copy-cta {
+      margin-top: 28px;
+    }
+    .hero-copy-fine {
+      margin-top: 12px;
     }
   }
 
@@ -1814,14 +1875,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     font-family: var(--font-sans);
     font-size: 13px;
     font-weight: 500;
-    color: var(--paper);
-    background: var(--ink);
     border-radius: 6px;
     text-decoration: none;
-    transition: opacity 160ms ease;
-  }
-
-  .seshat-doc-missing-cta:hover {
-    opacity: 0.85;
   }
 }

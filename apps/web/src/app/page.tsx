@@ -15,7 +15,7 @@ const DOWNLOAD_URL = `${API_BASE}/download`;
 export default function Home() {
   return (
     <main className="landing text-ink">
-      <HeroDesktop downloadHref={DOWNLOAD_URL} library={LIBRARY} initialId="Inbox/typography" />
+      <HeroDesktop downloadHref={DOWNLOAD_URL} library={LIBRARY} initialId="Inbox/start-here" />
       <div className="mx-auto max-w-[1200px] px-6">
         <About />
         <LibraryCard />
@@ -40,6 +40,45 @@ const SHELVES: Shelf[] = [
   {
     name: "Inbox",
     files: [
+      {
+        // The document the desktop opens on. It is the hero copy: what
+        // Seshat is, read inside Seshat.
+        name: "start-here",
+        age: "now",
+        unread: true,
+        md: `# A reading room for markdown
+
+Seshat is a native macOS reader for the markdown you write, generate, and share. Open a file and it reads like a page, not like source: serif headings, a calm measure, room in the margins.
+
+> Reading is the work. The renderer should disappear.
+
+## What it does
+
+- **Reads.** One file per window. An outline drifts in the margin; click a heading to jump.
+- **Keeps a library.** \`~/Seshat/\` is plain files in a folder. Subfolders are shelves. Nothing to import, nothing to sync.
+- **Opens from the terminal.** One word, from any folder.
+- **Shares by link.** Click Share and the page is public, set in the same type, on any device.
+- **Paper by day, ink by night.** Light by default, because Seshat is paper.
+
+\`\`\`sh
+$ seshat open report.md
+$ seshat share notes.md
+https://seshat.page/d/atrium-7c1a · copied
+\`\`\`
+
+## What it is not
+
+| Not a | Because |
+| --- | --- |
+| Editor | The reader stays the reader. ⌘E edits a block in place when you must. |
+| Wiki | No links between notes, no graph. Files in folders. |
+| Sync service | Your folder, your files. Put it in iCloud if you like. |
+
+## Free, macOS 14 or later
+
+Download the app, run \`seshat install\`, and open any file. Everything in this window is real: the sidebar, the outline, Night, Share. Try them.
+`,
+      },
       {
         name: "claude-session-report",
         age: "2h ago",
@@ -628,7 +667,7 @@ function Closure() {
         </p>
         <DownloadButton
           href={DOWNLOAD_URL}
-          className="close-cta bg-ink text-paper inline-flex h-10 items-center gap-2 rounded-full px-5 text-[14px] font-medium no-underline"
+          className="close-cta btn-ink inline-flex h-10 items-center gap-2 rounded-full px-5 text-[14px] font-medium no-underline"
         >
           <AppleGlyph />
           Download for macOS

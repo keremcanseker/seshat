@@ -56,7 +56,7 @@ export default function AuthCallbackPage() {
             </p>
             <a
               href="/login"
-              className="bg-ink text-paper inline-block rounded-md px-[18px] py-2.5 text-[13px] font-medium no-underline"
+              className="btn-ink inline-block rounded-md px-4.5 py-2.5 text-[13px] font-medium no-underline"
             >
               Try again
             </a>

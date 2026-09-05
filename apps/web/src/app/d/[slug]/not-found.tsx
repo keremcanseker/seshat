@@ -10,7 +10,7 @@ export default function DocNotFound() {
         <p className="seshat-doc-missing-body">
           This share link doesn&rsquo;t exist, or it was removed by its author.
         </p>
-        <Link href="/" className="seshat-doc-missing-cta">
+        <Link href="/" className="seshat-doc-missing-cta btn-ink">
           Back to Seshat
         </Link>
       </div>
