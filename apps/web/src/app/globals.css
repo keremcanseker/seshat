@@ -313,6 +313,13 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
   height: 0;
 }
 
+/* Landing hero: registered so the night-mask radius can transition. */
+@property --night {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
 @layer components {
   .seshat-doc-page {
     min-height: 100dvh;
@@ -955,6 +962,325 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     margin: 28px auto;
     border-radius: 4px;
     border: 0.5px solid var(--rule);
+  }
+
+  /* ── Landing page (/) ─────────────────────────────────── */
+
+  /* Brand row above the desktop. While the hero is pinned, the shrink hook
+     positions this fixed and fades it in. */
+  .hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    will-change: transform, opacity;
+  }
+
+  /* The desktop. Rests as a 16:11 card; the shrink hook overrides position,
+     size and radius inline while pinned. */
+  .hero-stage {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 16 / 11;
+    isolation: isolate;
+    background: #d8c7a6;
+  }
+
+  .hero-wall {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: 50% 45%;
+  }
+
+  /* Night: the same painting dimmed and pushed toward indigo, revealed from
+     the top-right corner by a growing radial mask. */
+  .hero-night {
+    position: absolute;
+    inset: 0;
+    --night: 0%;
+    mask-image: radial-gradient(circle at 100% 0%, #000 calc(var(--night) - 16%), transparent var(--night));
+    -webkit-mask-image: radial-gradient(circle at 100% 0%, #000 calc(var(--night) - 16%), transparent var(--night));
+    transition: --night 900ms cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .hero-night .hero-wall {
+    filter: brightness(0.6) saturate(0.7) contrast(1.05);
+  }
+
+  .hero-night::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #24346a;
+    mix-blend-mode: multiply;
+    opacity: 0.6;
+  }
+
+  /* While the desktop is pinned full-bleed, wheel events must drive the
+     shrink, not the document inside the window. */
+  .hero-stage.is-pinned .landing-window {
+    overflow: hidden;
+  }
+
+  .hero-stage.is-dark .hero-night {
+    --night: 160%;
+  }
+
+  .hero-menubar {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 590;
+    line-height: 16px;
+    color: #2a2522;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
+    z-index: 5;
+    transition: color 600ms ease;
+  }
+
+  .hero-stage.is-dark .hero-menubar {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero-app {
+    position: absolute;
+    left: 50%;
+    top: 53%;
+    transform: translate(-50%, -50%);
+    width: min(820px, 68%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 26px;
+    z-index: 10;
+  }
+
+  .hero-window {
+    width: 100%;
+    height: 500px;
+    display: flex;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    box-shadow:
+      0 0 0 0.5px rgba(40, 30, 20, 0.22),
+      0 24px 60px rgba(30, 20, 10, 0.32),
+      0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  .hero-window,
+  .hero-window * {
+    transition: background-color 350ms ease, color 350ms ease, border-color 350ms ease;
+  }
+
+  .hero-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+    overflow: hidden;
+    padding: 12px 10px 0;
+    background: var(--paper-subtle);
+    border-right: 0.5px solid var(--rule);
+  }
+
+  .hero-outline {
+    position: absolute;
+    top: 56px;
+    right: 22px;
+    width: 170px;
+  }
+
+  /* The window reuses the real /d/[slug] renderer at a slightly smaller zoom
+     so a full page of type fits the mock. */
+  .landing-window {
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .landing-window::-webkit-scrollbar {
+    display: none;
+  }
+
+  .landing-window .seshat-doc {
+    zoom: 0.86;
+    padding: 36px 44px 48px;
+  }
+
+  .landing-window.has-outline .seshat-doc {
+    padding-right: 210px;
+  }
+
+  .hero-dock {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 9999px;
+    background: rgba(40, 32, 24, 0.34);
+    backdrop-filter: blur(20px) saturate(130%);
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    z-index: 12;
+  }
+
+  .hero-dock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 160ms ease;
+  }
+
+  .hero-dock-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .hero-dock-btn.is-on {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .hero-toast {
+    position: absolute;
+    top: 40px;
+    right: 16px;
+    z-index: 20;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 18px 40px rgba(30, 20, 10, 0.28), 0 2px 8px rgba(0, 0, 0, 0.14);
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .hero-toast.is-open {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero-toast-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .hero-toast-url {
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+
+  /* Three tilted paper sheets above the library card. */
+  .hero-sheets {
+    position: relative;
+    width: 150px;
+    height: 84px;
+    margin: 0 auto 26px;
+  }
+
+  .hero-sheets span {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 74px;
+    height: 84px;
+    padding: 10px 8px 0;
+    border-radius: 5px;
+    background: var(--paper);
+    border: 0.5px solid var(--rule-strong);
+    box-shadow: 0 6px 18px rgba(30, 20, 10, 0.08);
+    font-family: var(--font-heading);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    text-align: left;
+    transform-origin: 50% 100%;
+  }
+
+  .hero-sheets span::after {
+    content: "";
+    display: block;
+    margin-top: 6px;
+    height: 26px;
+    background: repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 6px);
+  }
+
+  .hero-sheets span:nth-child(1) { transform: translateX(-50%) rotate(-9deg) translateX(-22px); }
+  .hero-sheets span:nth-child(2) { transform: translateX(-50%) translateY(-6px); z-index: 1; }
+  .hero-sheets span:nth-child(3) { transform: translateX(-50%) rotate(9deg) translateX(22px); text-align: right; }
+
+  @media (max-width: 1100px) {
+    .hero-outline {
+      display: none;
+    }
+    .landing-window.has-outline .seshat-doc {
+      padding-right: 44px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-stage {
+      aspect-ratio: 3 / 4.3;
+    }
+    .hero-app {
+      width: 88%;
+      gap: 14px;
+    }
+    .hero-window {
+      height: 320px;
+    }
+    .hero-sidebar,
+    .hero-outline {
+      display: none;
+    }
+    .hero-menubar {
+      font-size: 11px;
+      padding: 0 12px;
+    }
+    .landing-window .seshat-doc,
+    .landing-window.has-outline .seshat-doc {
+      zoom: 0.72;
+      padding: 22px 20px 32px;
+    }
+    .hero-dock-btn span {
+      display: none;
+    }
+    .hero-dock-btn {
+      padding: 0 11px;
+    }
   }
 
   /* ── 404 ──────────────────────────────────────────────── */

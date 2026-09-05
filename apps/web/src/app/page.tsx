@@ -1,4 +1,6 @@
-import { DownloadButton } from "@/components/download-button";
+import { BookOpen, Library, Link2, ListTree, SunMoon, Terminal } from "lucide-react";
+import { HeroDesktop } from "@/components/landing/hero-desktop";
+import { SeshatDoc } from "@/components/seshat-doc";
 import { SeshatMark } from "@/components/seshat-mark";
 
 // Our own server is the single source of truth for the latest build (repo is
@@ -9,421 +11,163 @@ const DOWNLOAD_URL = `${API_BASE}/download`;
 
 export default function Home() {
   return (
-    <main className="bg-paper text-ink min-h-screen">
-      <Hero />
-      <Why />
-      <TwoSurfaces />
-      <How />
-      <InPractice />
-      <TOC />
-      <Philosophy />
+    <main className="bg-paper text-ink mx-auto max-w-[1200px] px-6 pt-7 pb-16">
+      <HeroDesktop downloadHref={DOWNLOAD_URL} doc={<SeshatDoc content={SAMPLE_MD} />} />
+      <About />
+      <LibraryCard />
+      <SharePromo />
       <Footer />
     </main>
   );
 }
 
-function Lockup() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <SeshatMark size={20} className="text-ink" strokeWidth={1.4} />
-      <span className="font-heading text-ink text-[17px] font-semibold tracking-[-0.005em]">
-        Seshat
-      </span>
-    </div>
-  );
+const SAMPLE_MD = `# Typography for Long Documents
+
+Most tools treat markdown as source code. Seshat treats it as *writing*: serif headings, generous line height, and a measure narrow enough to actually read.
+
+> Reading is the work. The renderer should disappear.
+
+## What changes on paper
+
+- Headings set in New York, the system serif
+- Body text at a calm 1.65 line height
+- Code blocks breathe wider than prose
+
+\`\`\`swift
+let parsed = MarkdownParser.parse(source)
+for section in parsed.sections {
+    render(section, theme: .seshat)
 }
+\`\`\`
 
-/* ── Hero ──────────────────────────────────────────────────────────── */
+## Tables without the grid
 
-function Hero() {
+| Element | Typeface | Size |
+| --- | --- | --- |
+| Headings | New York Serif | 36 / 26 / 20 |
+| Body | SF Pro Text | 16 pt |
+| Code | SF Mono | 14 pt |
+
+## Lists
+
+- Plain unordered list item with reasonable line height
+- Second item
+
+## Blockquotes
+
+> Margins, not separators, do the work of structuring prose.
+`;
+
+/* ── About ─────────────────────────────────────────────────────────── */
+
+const features = [
+  {
+    icon: BookOpen,
+    title: "A reader, not an editor",
+    body: "Serif headings, a 720pt measure, one file per window.",
+  },
+  {
+    icon: Terminal,
+    title: "A one-word CLI",
+    body: "seshat open report.md from any terminal, any folder.",
+  },
+  {
+    icon: Library,
+    title: "A library at ~/Seshat",
+    body: "Plain files in a folder. Subfolders are shelves.",
+  },
+  {
+    icon: ListTree,
+    title: "A floating outline",
+    body: "Headings drift in the margin. Click one to jump.",
+  },
+  {
+    icon: Link2,
+    title: "Share by link",
+    body: "One click publishes the page. Same type, any device.",
+  },
+  {
+    icon: SunMoon,
+    title: "Paper by day, ink by night",
+    body: "Light by default, because Seshat is paper.",
+  },
+];
+
+function About() {
   return (
-    <section className="border-rule relative border-b-[0.5px] px-20 pt-[120px] pb-[100px]">
-      <nav className="absolute top-8 right-20 left-20 flex items-center justify-between font-sans">
-        <Lockup />
-        <div className="text-ink-muted flex gap-7 text-[14px]">
-          <a href="#what" className="hover:text-ink transition-colors">
-            Reader
-          </a>
-          <a href="#how" className="hover:text-ink transition-colors">
-            CLI
-          </a>
-          <a href="#how" className="hover:text-ink transition-colors">
-            Share
-          </a>
-          <a href="#philosophy" className="hover:text-ink transition-colors">
-            Notes
-          </a>
-        </div>
-      </nav>
-
-      <div className="font-sans mx-auto max-w-[760px] text-center">
-        <p className="text-ink-muted font-heading mb-7 text-[18px] italic">
-          A reading room for markdown.
-        </p>
-        <h1 className="font-heading text-ink m-0 text-balance text-[76px] leading-[1.05] font-bold tracking-[-0.018em]">
-          Long markdown,
-          <br />
-          finally readable.
-        </h1>
-        <p className="text-ink-muted mx-auto mt-7 mb-9 max-w-[560px] text-[19px] leading-[1.55]">
-          A native macOS reader and CLI for the markdown you write, generate,
-          and share, set in book-quality typography, on a 720pt measure, in
-          its own window.
-        </p>
-        <div className="flex items-center justify-center gap-3.5">
-          <DownloadButton
-            href={DOWNLOAD_URL}
-            className="bg-ink text-paper inline-flex items-center gap-2.5 rounded-md px-[22px] py-3.5 text-[15px] font-medium no-underline"
-          >
-            <AppleGlyph />
-            Download for macOS
-          </DownloadButton>
-          <a
-            href="#how"
-            className="text-ink inline-flex items-center gap-2 px-[18px] py-3.5 text-[15px] no-underline"
-          >
-            See how it reads
-            <ArrowRight />
-          </a>
-        </div>
-        <p className="text-ink-faint mt-9 font-mono text-[12px]">
-          macOS 14+ · Universal · 18 MB · also:{" "}
-          <span className="text-ink-muted">brew install seshat</span>
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function AppleGlyph() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M17.5 12.5c0-2.4 2-3.6 2.1-3.6-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.7.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.5 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.2 3.1-2.5.6-.8 1.1-1.7 1.4-2.6-2.5-.9-2.9-4-3-4.6zM14.7 5.4c.7-.8 1.2-2 1-3.2-1.1.1-2.4.8-3 1.5-.6.7-1.2 1.8-1 3 1.2.1 2.4-.6 3-1.3z" />
-    </svg>
-  );
-}
-
-function ArrowRight() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-/* ── Why ───────────────────────────────────────────────────────────── */
-
-function Why() {
-  return (
-    <section className="border-rule border-b-[0.5px] px-20 py-[100px] font-sans">
-      <div className="mx-auto grid max-w-[920px] grid-cols-[180px_1fr] gap-20">
-        <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
-          02 · Why Seshat
-        </div>
-        <div>
-          <h2 className="font-heading text-ink m-0 mb-8 text-balance text-[40px] leading-[1.18] font-bold tracking-[-0.01em]">
-            Two things were broken about long markdown.
-          </h2>
-          <div className="text-ink-muted grid gap-7 text-[17px] leading-[1.65]">
-            <p className="m-0">
-              <span className="text-ink font-semibold">One.</span> Reading it
-              inside a developer tool is exhausting. 13-pixel sans-serif inside
-              a tree view, between a sidebar of files and a panel of metadata,
-              was never a reading layout.
-            </p>
-            <p className="m-0">
-              <span className="text-ink font-semibold">Two.</span> Sharing it
-              is fiddly. You don&rsquo;t want to deploy a service, paste it
-              into Notion, or convert to PDF for someone to read three
-              paragraphs of an RFC.
-            </p>
+    <section className="mt-[100px]">
+      <h2 className="font-heading text-ink mx-auto mb-8 max-w-[46ch] text-balance text-center text-[24px] leading-[1.3] font-semibold tracking-[-0.01em]">
+        A native macOS reader for the markdown you write, generate, and share.
+      </h2>
+      <div className="mx-auto grid max-w-[820px] grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
+        {features.map((f) => (
+          <div key={f.title} className="bg-paper-subtle flex flex-col rounded-2xl p-5">
+            <f.icon size={20} className="text-gold mb-2.5" strokeWidth={1.6} />
+            <h3 className="text-ink m-0 mb-1 text-[15px] font-medium tracking-[-0.005em]">
+              {f.title}
+            </h3>
+            <p className="text-ink-muted m-0 text-[14px] leading-[1.5]">{f.body}</p>
           </div>
-        </div>
+        ))}
       </div>
     </section>
   );
 }
 
-/* ── Two surfaces ──────────────────────────────────────────────────── */
+/* ── Library ───────────────────────────────────────────────────────── */
 
-function TwoSurfaces() {
+function LibraryCard() {
   return (
-    <section
-      id="surfaces"
-      className="border-rule border-b-[0.5px] px-20 py-[100px] font-sans"
-    >
-      <div className="mx-auto grid max-w-[1100px] grid-cols-[180px_1fr] gap-20">
-        <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
-          03 · Two surfaces
-        </div>
-        <div>
-          <h2 className="font-heading text-ink m-0 mb-4 text-balance text-[40px] leading-[1.18] font-bold tracking-[-0.01em]">
-            A reader for you, a link for everyone else.
-          </h2>
-          <p className="text-ink-muted m-0 mb-10 max-w-[560px] text-[17px] leading-[1.65]">
-            One product, two surfaces. The desktop reader and the share link
-            are the same document, rendered with the same care.
-          </p>
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-            <SurfaceCard
-              numeral="i."
-              when="today"
-              title="The reader"
-              body="A native macOS app pointed at a managed library at ~/Seshat/. Open any file in its own window, browse a Finder-style sidebar, glance at the outline. Minimal chrome, generous typography, scholarly calm."
-              command="seshat open notes.md"
-              output="→ window opens, typeset like a chapter"
-            />
-            <SurfaceCard
-              numeral="ii."
-              when="today"
-              title="The share layer"
-              body={
-                <>
-                  Open a document and click <strong>Share</strong>. Seshat
-                  publishes the file and copies a public URL. The recipient
-                  opens the link in any browser and sees the same document,
-                  rendered with the same theme. No login wall. No app install.
-                </>
-              }
-              prompt="▸"
-              command="Share · investigation.md"
-              output="https://seshat.app/d/atrium-7c1a · copied"
-            />
-          </div>
-        </div>
+    <section className="bg-paper-subtle mx-auto mt-[100px] max-w-[820px] rounded-2xl px-6 py-14 text-center">
+      <div className="hero-sheets" aria-hidden>
+        <span>RFC</span>
+        <span>typography</span>
+        <span>notes</span>
       </div>
+      <h2 className="font-heading text-ink m-0 mb-2 text-[24px] font-semibold tracking-[-0.01em]">
+        Your library is a folder.
+      </h2>
+      <p className="text-ink-muted mx-auto mb-5 max-w-[42ch] text-[14px] leading-[1.55]">
+        ~/Seshat/ is plain markdown on disk. Drop a file in and it appears in
+        the sidebar. Nothing to import, nothing to sync, nothing to export.
+      </p>
+      <code className="text-ink-faint font-mono text-[12px]">
+        ~/Seshat/Inbox/typography.md
+      </code>
     </section>
   );
 }
 
-function SurfaceCard({
-  numeral,
-  when,
-  title,
-  body,
-  command,
-  output,
-  prompt = "$",
-}: {
-  numeral: string;
-  when: string;
-  title: string;
-  body: React.ReactNode;
-  command: string;
-  output: string;
-  prompt?: string;
-}) {
+/* ── Share ─────────────────────────────────────────────────────────── */
+
+function SharePromo() {
   return (
-    <div className="border-rule grid gap-5 border-[0.5px] p-7">
-      <div className="flex items-baseline justify-between">
-        <span className="font-heading text-gold text-[14px] italic">
-          {numeral}
+    <section className="mx-auto mt-[100px] grid max-w-[820px] items-center gap-7 sm:grid-cols-[411px_1fr] sm:gap-14">
+      <div className="relative aspect-[411/311] overflow-hidden rounded-[20px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-temple.jpg"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[88%_50%]"
+        />
+        <div className="bg-paper/92 text-ink absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2.5 rounded-xl px-4 py-2.5 font-mono text-[12px] whitespace-nowrap shadow-[0_18px_40px_rgba(30,20,10,.28),0_2px_8px_rgba(0,0,0,.12)] backdrop-blur">
+          <Link2 size={13} className="text-gold" />
+          seshat.page/d/atrium-7c1a
+          <span className="text-ink-faint">· copied</span>
+        </div>
+      </div>
+      <div>
+        <h3 className="font-heading text-ink m-0 mb-3.5 text-balance text-[24px] leading-[1.25] font-semibold tracking-[-0.01em]">
+          Hand someone a pamphlet.
+        </h3>
+        <p className="text-ink-muted m-0 mb-6 max-w-[38ch] text-[15px] leading-[1.6]">
+          Open a document, click Share. Seshat publishes it and copies a link.
+          The page renders with the same type on any device. No login wall,
+          no app to install.
+        </p>
+        <span className="bg-paper-subtle text-ink-muted inline-flex h-7 items-center rounded-full px-3.5 font-mono text-[12px]">
+          <span className="text-gold mr-2">$</span> seshat share notes.md
         </span>
-        <span className="text-ink-faint font-mono text-[10px] tracking-[0.12em] uppercase">
-          {when}
-        </span>
-      </div>
-      <h3 className="font-heading text-ink m-0 text-[22px] font-semibold leading-[1.2]">
-        {title}
-      </h3>
-      <p className="text-ink-muted m-0 text-[15px] leading-[1.65]">{body}</p>
-      <pre className="border-rule bg-paper-subtle text-ink mt-auto m-0 rounded-md border-[0.5px] px-[14px] py-3 font-mono text-[13px] leading-[1.55]">
-        <div>
-          <span className="text-gold">{prompt}</span> {command}
-        </div>
-        <div className="text-ink-muted">{output}</div>
-      </pre>
-    </div>
-  );
-}
-
-/* ── How ───────────────────────────────────────────────────────────── */
-
-const commands: Array<{ cmd: string; desc: React.ReactNode; app?: boolean }> = [
-  {
-    cmd: "seshat open report.md",
-    desc: "Opens any markdown file in its own reader window. 720pt measure, book-grade type, no editor chrome.",
-  },
-  {
-    cmd: "cd ~/Seshat",
-    desc: "A managed library folder. Drop files in, browse them in a Finder-style sidebar, every file gets its own window.",
-  },
-  {
-    cmd: "Share → copy link",
-    app: true,
-    desc: (
-      <>
-        In the reader, click <strong>Share</strong>. Seshat publishes the file
-        and copies a public link. <em>No Notion. No service. Just a link.</em>
-      </>
-    ),
-  },
-];
-
-function How() {
-  return (
-    <section
-      id="how"
-      className="border-rule border-b-[0.5px] px-20 py-[100px] font-sans"
-    >
-      <div className="mx-auto grid max-w-[1100px] grid-cols-[180px_1fr] gap-20">
-        <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
-          04 · How it works
-        </div>
-        <div>
-          <h2 className="font-heading text-ink m-0 mb-10 text-balance text-[40px] leading-[1.18] font-bold">
-            Open it. Read it. Share it.
-          </h2>
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-            {commands.map((c) => (
-              <div key={c.cmd} className="grid gap-3.5">
-                <pre className="border-rule bg-paper-subtle text-ink m-0 rounded-md border-[0.5px] px-[18px] py-3.5 font-mono text-[14px]">
-                  <span className="text-gold">{c.app ? "▸" : "$"}</span> {c.cmd}
-                </pre>
-                <p className="text-ink-muted m-0 text-[15px] leading-[1.6]">
-                  {c.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── In Practice ───────────────────────────────────────────────────── */
-
-const scenarios: Array<{ headline: string; body: string }> = [
-  {
-    headline: "AI output that finally feels like reading.",
-    body: "A long Claude Code session produces a 3,000-line markdown report. seshat open report.md and the report is typeset like a chapter. For the first time, it feels worth reading instead of scrolling past.",
-  },
-  {
-    headline: "Send a teammate something they’ll actually open.",
-    body: "seshat share report.md returns a link. Paste it into Slack. They click, read it on their phone on the bus, and it still looks good. No login wall, no app install.",
-  },
-  {
-    headline: "A personal study, not a file picker.",
-    body: "Your ~/Seshat/ folder of notes, drafts, investigations, half-finished essays. The sidebar feels like walking into a library, not opening a directory in VS Code.",
-  },
-  {
-    headline: "RFCs that read like the real thing.",
-    body: "Your team writes RFCs as markdown. The Seshat link is the canonical place to read them. Discussion lives elsewhere; the link is just for the document.",
-  },
-];
-
-function InPractice() {
-  return (
-    <section
-      id="practice"
-      className="border-rule border-b-[0.5px] px-20 py-[100px] font-sans"
-    >
-      <div className="mx-auto grid max-w-[1100px] grid-cols-[180px_1fr] gap-20">
-        <div className="text-ink-faint pt-1.5 font-mono text-[11px] tracking-[0.1em] uppercase">
-          05 · In practice
-        </div>
-        <div>
-          <h2 className="font-heading text-ink m-0 mb-10 text-balance text-[40px] leading-[1.18] font-bold tracking-[-0.01em]">
-            Scenarios this is built around.
-          </h2>
-          <div className="grid gap-10">
-            {scenarios.map((s, i) => (
-              <article
-                key={s.headline}
-                className="border-rule grid gap-4 border-t-[0.5px] pt-7 sm:grid-cols-[64px_1fr] sm:gap-8"
-              >
-                <div className="font-heading text-gold text-[28px] leading-none italic tabular-nums">
-                  {String(i + 1).padStart(2, "0")}
-                </div>
-                <div>
-                  <h3 className="font-heading text-ink m-0 max-w-[34rem] text-balance text-[22px] font-semibold leading-[1.25]">
-                    {s.headline}
-                  </h3>
-                  <p className="text-ink-muted mt-3 mb-0 max-w-[40rem] text-[15px] leading-[1.65]">
-                    {s.body}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── TOC ───────────────────────────────────────────────────────────── */
-
-const rows: Array<{ num: string; left: string; right: string }> = [
-  { num: "I", left: "A reader, not an editor.", right: "No cursor, no toolbar, no margin notes." },
-  { num: "II", left: "Opinionated typography.", right: "New York for headings, SF for body, SF Mono for code. Locked." },
-  { num: "III", left: "One file, one window.", right: "Like documents in TextEdit. State per file." },
-  { num: "IV", left: "A managed library.", right: "~/Seshat: your folder, your files, our sidebar." },
-  { num: "V", left: "Floating outline.", right: "Background-less panel. Headings only." },
-  { num: "VI", left: "Light, by default.", right: "Because Seshat is paper. Dark mode is there." },
-  { num: "VII", left: "Built for AI output.", right: "Long agent transcripts, RFCs, postmortems, drafts." },
-  { num: "VIII", left: "Share by link.", right: "One click in the reader, one URL. They just open it." },
-];
-
-function TOC() {
-  return (
-    <section
-      id="what"
-      className="border-rule bg-paper-subtle border-b-[0.5px] px-20 py-[100px] font-sans"
-    >
-      <div className="mx-auto max-w-[920px]">
-        <div className="mb-10 flex items-baseline gap-7">
-          <div className="text-ink-faint font-mono text-[11px] tracking-[0.1em] uppercase">
-            06 · Reading, not editing
-          </div>
-          <h2 className="font-heading text-ink m-0 text-[40px] font-bold tracking-[-0.01em]">
-            What Seshat is, what it isn&rsquo;t.
-          </h2>
-        </div>
-        <div>
-          {rows.map((r) => (
-            <div
-              key={r.num}
-              className="border-rule-strong grid grid-cols-[64px_1fr_1fr] items-baseline gap-6 border-t-[0.5px] py-5"
-            >
-              <span className="font-heading text-gold text-[18px] italic">
-                {r.num}.
-              </span>
-              <span className="font-heading text-ink text-[22px] font-semibold">
-                {r.left}
-              </span>
-              <span className="text-ink-muted text-[15px]">{r.right}</span>
-            </div>
-          ))}
-          <div className="border-rule-strong border-t-[0.5px]" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Philosophy ────────────────────────────────────────────────────── */
-
-function Philosophy() {
-  return (
-    <section
-      id="philosophy"
-      className="border-rule border-b-[0.5px] px-20 py-[120px] font-sans"
-    >
-      <div className="mx-auto max-w-[720px] text-left">
-        <div className="text-ink-faint mb-7 font-mono text-[11px] tracking-[0.1em] uppercase">
-          07 · Philosophy
-        </div>
-        <p className="font-heading text-ink m-0 text-[32px] leading-[1.4] font-normal tracking-[-0.005em]">
-          Seshat is for developers, but it isn&rsquo;t a dev tool. It does one
-          thing, render long markdown legibly, and it has opinions about how.
-          You don&rsquo;t pick the font. You don&rsquo;t pick the measure. You
-          don&rsquo;t pick the theme. You drop a file in and read it.
-        </p>
-        <p className="font-heading text-ink-muted mt-8 mb-0 text-[18px] italic">
-          Hand someone a pamphlet, not deploy a service.
-        </p>
       </div>
     </section>
   );
@@ -433,19 +177,14 @@ function Philosophy() {
 
 function Footer() {
   return (
-    <footer className="text-ink-faint flex items-center justify-between px-20 py-10 font-sans text-[12px]">
-      <div className="flex items-center gap-3.5">
-        <SeshatMark size={18} strokeWidth={1.6} className="text-ink-faint" />
-        <span>Seshat · Mistress of the House of Books</span>
-      </div>
-      <div className="flex gap-6">
-        <a href="#" className="hover:text-ink-muted transition-colors">
-          changelog
-        </a>
-        <a href="#" className="hover:text-ink-muted transition-colors">
-          privacy
-        </a>
-        <span>© 2026</span>
+    <footer className="mx-auto mt-[100px] max-w-[820px]">
+      <hr className="bg-rule m-0 h-px border-0" />
+      <div className="text-ink-faint flex items-center justify-between pt-14 text-[13px]">
+        <span className="flex items-center gap-2.5">
+          <SeshatMark size={16} strokeWidth={1.6} />
+          Seshat · Mistress of the House of Books
+        </span>
+        <span>© 2026 · macOS 14+</span>
       </div>
     </footer>
   );
