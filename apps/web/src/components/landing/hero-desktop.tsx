@@ -138,7 +138,8 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
               <img className="hero-copy-icon" src="/apple-icon.png" alt="" width={72} height={72} draggable={false} />
               <h1 className="hero-copy-title">Read markdown like a document.</h1>
               <p className="hero-copy-lede">
-                A native macOS reader for .md files. Open a document. Share it as a link.
+                A native macOS reader for the markdown your agents write and you keep.
+                Read it as a page, not source. Send a link, not a file.
               </p>
               <DownloadButton href={downloadHref} className="btn-ink hero-copy-cta">
                 <AppleGlyph />

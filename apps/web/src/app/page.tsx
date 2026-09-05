@@ -3,7 +3,6 @@ import { DownloadButton } from "@/components/download-button";
 import { Faq, type FaqItem } from "@/components/landing/faq";
 import { AppleGlyph, HeroDesktop, type LibraryGroup } from "@/components/landing/hero-desktop";
 import { SeshatDoc } from "@/components/seshat-doc";
-import { SeshatMark } from "@/components/seshat-mark";
 import { extractOutline } from "@/lib/extract-outline";
 
 // Our own server is the single source of truth for the latest build (repo is
@@ -48,7 +47,9 @@ const SHELVES: Shelf[] = [
         unread: true,
         md: `# Read markdown like a document
 
-Seshat is a native macOS reader for the markdown you write, generate, and share. Open a file and read a page instead of source code: serif headings, a measured line, room around the words.
+Most of the markdown on your machine was written by an agent. Every Claude Code session ends in a report. Plans, postmortems, and investigations pile up in the repo. They arrive in an editor tab or a chat pane, set in a font meant for code, and they are hard to read there and harder to hand to anyone else.
+
+Seshat is a native macOS reader for those files, and for the ones you write yourself. Open one and read a page instead of source: serif headings, a measured line, room around the words. When someone else should read it, send a link instead of the file. It opens as the same page, with nothing to install.
 
 > Reading is the work. The page should disappear.
 
@@ -493,7 +494,7 @@ const features = [
   {
     icon: BookOpen,
     title: "A reader first",
-    body: "Serif headings, 720pt prose, one document per window.",
+    body: "Serif headings, 720pt prose, one document per window. A page, not a preview pane.",
   },
   {
     icon: Terminal,
@@ -513,7 +514,7 @@ const features = [
   {
     icon: Link2,
     title: "Publish a link",
-    body: "One click publishes it. The same type, any device.",
+    body: "Send a link, not a .md file. The same type on any device, nothing to install.",
   },
   {
     icon: SunMoon,
@@ -526,7 +527,7 @@ function About() {
   return (
     <section id="about" className="mt-[100px]">
       <h2 className="font-heading text-ink mx-auto mb-8 max-w-[46ch] text-balance text-center text-[24px] leading-[1.3] font-semibold tracking-[-0.01em]">
-        Read long markdown as a document. Keep files in a folder. Share them by link.
+        Your agents write in markdown. Read it as a document, keep it in a folder, and send it as a link.
       </h2>
       <div className="mx-auto grid max-w-[820px] grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
         {features.map((f) => (
@@ -587,12 +588,12 @@ function SharePromo() {
       </div>
       <div>
         <h3 className="font-heading text-ink m-0 mb-3.5 text-balance text-[24px] leading-[1.25] font-semibold tracking-[-0.01em]">
-          Publish the file you have.
+          Send a link, not a file.
         </h3>
         <p className="text-ink-muted m-0 mb-6 max-w-[38ch] text-[15px] leading-[1.6]">
-          Click Share. Seshat publishes the markdown and copies a public link.
-          It opens in the same type in any browser. Readers need no account or
-          app.
+          Sent as a file, markdown is source code on the other end. Click
+          Share and Seshat publishes the page and copies a link. It opens in
+          the same type in any browser. Readers need no account or app.
         </p>
         <span className="bg-paper-subtle text-ink-muted inline-flex h-7 items-center rounded-full px-3.5 font-mono text-[12px]">
           <span className="text-gold mr-2">$</span> seshat share notes.md
@@ -605,6 +606,10 @@ function SharePromo() {
 /* ── Questions ─────────────────────────────────────────────────────── */
 
 const FAQ: FaqItem[] = [
+  {
+    q: "Why not read it in the editor?",
+    a: "You can, in a monospace tab beside the code. But most of the markdown on a machine now comes from agents: session reports, plans, investigations, thousands of words at a time. Those are documents. Seshat opens one in its own window, set for reading, so you can actually finish it. And when a teammate should read it too, you send a link instead of a file.",
+  },
   {
     q: "Where do my files live?",
     a: "In ~/Seshat/, as plain markdown on disk. Top-level folders become shelves in the sidebar. Put the folder in Git or iCloud, or open it in any editor. Seshat never imports or converts it.",
@@ -662,8 +667,8 @@ function Closure() {
           Read the markdown you already have.
         </h2>
         <p className="close-lede">
-          Free for macOS. Open any file, keep a folder library, and share a
-          page with one link.
+          Free for macOS. Open the report an agent just wrote, keep what is
+          worth keeping, and send it on as a link.
         </p>
         <DownloadButton
           href={DOWNLOAD_URL}
@@ -679,7 +684,8 @@ function Closure() {
         <div className="foot-in">
           <div className="foot-id">
             <a className="foot-brand" href="/" aria-label="Seshat home">
-              <SeshatMark size={22} strokeWidth={1.4} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/apple-icon.png" alt="" width={44} height={44} draggable={false} />
             </a>
             <p className="foot-name">Seshat</p>
             <p className="foot-by">
