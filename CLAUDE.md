@@ -183,7 +183,7 @@ The MVP is the macOS app + CLI. Three larger phases follow, in this order.
 - [ ] Custom Egyptian-themed bullet/check glyphs to replace SF Symbol diamonds — research seven-pointed star, ankh, papyrus icons
 - [ ] First-launch onboarding view that explains `~/Seshat/` and the `seshat install` one-liner (currently skipped — Phase 8 in the original plan)
 - [ ] Disable macOS window restoration via `applicationSupportsSecureRestorableState` to prevent stale-state confusion, OR embrace it cleanly
-- [ ] App icon (currently empty AppIcon.appiconset)
+- [x] App icon: `AppIcon.appiconset/icon_1024.png` is the master (letterpress emblem on cream paper); smaller sizes and `apps/web/src/app/apple-icon.png` are downscaled from it
 - [ ] Code-sign + notarize for distribution outside the Xcode build tree
 
 ### Editing mode (v0.2) — shipped

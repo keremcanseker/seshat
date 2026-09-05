@@ -79,7 +79,7 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
       <div className="hero">
         <div className="hero-top">
           <div className="flex items-center gap-2.5">
-            <SeshatMark size={20} className="text-ink" strokeWidth={1.4} />
+            <SeshatMark size={20} strokeWidth={1.4} />
             <span className="font-heading text-ink text-[16px] font-semibold tracking-[-0.005em]">
               Seshat
             </span>

@@ -16,9 +16,6 @@ final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if let outputPath = exportIconsArgument(in: CommandLine.arguments) {
-            exportIcons(to: outputPath)
-        }
         authStore.bootstrap()
         CLIInstaller.runFirstLaunchIfNeeded()
         Task { await updateChecker.check() }
@@ -31,23 +28,5 @@ final class SeshatAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationSupportsSecureRestorableState(_ application: NSApplication) -> Bool {
         false
-    }
-
-    private func exportIconsArgument(in arguments: [String]) -> String? {
-        guard let index = arguments.firstIndex(of: "--export-icons") else { return nil }
-        let next = index + 1
-        return next < arguments.count ? arguments[next] : nil
-    }
-
-    private func exportIcons(to path: String) {
-        let url = URL(filePath: (path as NSString).expandingTildeInPath)
-        do {
-            try IconExporter.exportAll(to: url)
-            seshatLog("IconExporter: done. Exiting.")
-            exit(0)
-        } catch {
-            seshatLog("IconExporter failed: \(error.localizedDescription)")
-            exit(1)
-        }
     }
 }

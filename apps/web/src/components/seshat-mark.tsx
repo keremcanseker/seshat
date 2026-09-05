@@ -11,11 +11,12 @@ type SeshatMarkProps = {
  * The Seshat emblem mirrors the macOS app icon
  * (apps/macos/Seshat/Assets.xcassets/AppIcon.appiconset/icon_*.png):
  * a downward-curving headdress, a vertical staff, and the seven-pointed star.
- * Inherits color from `currentColor` so it adapts to the surrounding palette.
+ * Gold by default like the letterpress icon; pass a `text-*` class to override
+ * (faint for empty states, ink for dense chrome).
  */
 export function SeshatMark({
   size = 28,
-  className,
+  className = "text-gold",
   starOnly = false,
   withCircle = false,
   strokeWidth = 1.4,

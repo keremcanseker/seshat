@@ -25,7 +25,7 @@ struct OnboardingView: View {
 
     private var header: some View {
         VStack(spacing: 14) {
-            SeshatMark(lineWidth: 1.5, color: .seshatBodyText)
+            SeshatMark(lineWidth: 1.5, color: .seshatAccent)
                 .frame(width: 56, height: 56)
             Text("Welcome to Seshat")
                 .font(.system(size: 26, weight: .semibold, design: .serif))

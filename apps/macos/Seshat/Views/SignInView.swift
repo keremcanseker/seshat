@@ -7,7 +7,7 @@ struct SignInView: View {
         ZStack {
             Color.seshatPaper.ignoresSafeArea()
             VStack(spacing: 28) {
-                SeshatMark(lineWidth: 1.5, color: .seshatBodyText)
+                SeshatMark(lineWidth: 1.5, color: .seshatAccent)
                     .frame(width: 64, height: 64)
                 VStack(spacing: 8) {
                     Text("Welcome to Seshat")
