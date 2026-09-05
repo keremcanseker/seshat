@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   return {
     title: `${doc.title} · Seshat`,
-    description: `Shared markdown document on Seshat.`,
+    description: "A markdown document shared with Seshat.",
     openGraph: { title: doc.title, type: "article", siteName: "Seshat" },
     twitter: { card: "summary", title: doc.title },
   };
@@ -46,7 +46,7 @@ export default async function SharedDocPage({ params }: Props) {
       <footer className="seshat-doc-page-footer">
         <Link href="/" className="seshat-doc-page-footer-link">
           <SeshatMark size={12} />
-          <span>Shared via Seshat</span>
+          <span>Read with Seshat</span>
         </Link>
       </footer>
     </main>

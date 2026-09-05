@@ -8,7 +8,7 @@ export default function DocNotFound() {
         <SeshatMark size={36} className="seshat-doc-missing-mark" />
         <h1 className="seshat-doc-missing-title">Document not found</h1>
         <p className="seshat-doc-missing-body">
-          This share link doesn&rsquo;t exist, or it was removed by its author.
+          This share link does not exist, or its author removed it.
         </p>
         <Link href="/" className="seshat-doc-missing-cta btn-ink">
           Back to Seshat

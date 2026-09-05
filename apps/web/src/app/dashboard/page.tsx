@@ -7,7 +7,7 @@ import { getCurrentUser, getMyDocs } from "@/lib/auth";
 import { logoutAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Your library · Seshat",
+  title: "Your pages · Seshat",
 };
 
 export default async function DashboardPage() {
@@ -55,9 +55,9 @@ export default async function DashboardPage() {
             Shared documents
           </h1>
           <p className="text-ink-muted mt-3 max-w-[520px] text-[15px] leading-[1.6]">
-            Every markdown file you&rsquo;ve shared with{" "}
+            Every markdown file you shared with{" "}
             <code className="font-mono text-[13px]">seshat share</code>. Open it,
-            copy its link, or remove it from the web.
+            copy its link, or remove its public page.
           </p>
         </div>
 

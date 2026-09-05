@@ -93,10 +93,10 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
             <img className="hero-toast-icon" src="/apple-icon.png" alt="" width={52} height={52} />
             <div className="hero-toast-text">
               <div className="hero-toast-title">
-                Link copied
+                Public link copied
                 <span className="hero-toast-time">now</span>
               </div>
-              <div className="hero-toast-body">seshat.page/d/atrium-7c1a is on your clipboard.</div>
+              <div className="hero-toast-body">seshat.page/d/atrium-7c1a is copied.</div>
             </div>
           </div>
 
@@ -136,9 +136,9 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
             <div className="hero-copy">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="hero-copy-icon" src="/apple-icon.png" alt="" width={72} height={72} draggable={false} />
-              <h1 className="hero-copy-title">A reading room for markdown.</h1>
+              <h1 className="hero-copy-title">Read markdown like a document.</h1>
               <p className="hero-copy-lede">
-                A native macOS reader with calm, book-like type. Your library is a folder. Any page becomes a link.
+                A native macOS reader for .md files. Open a document. Share it as a link.
               </p>
               <DownloadButton href={downloadHref} className="btn-ink hero-copy-cta">
                 <AppleGlyph />

@@ -16,14 +16,14 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seshat a reading room for markdown",
+  title: "Seshat: A markdown reader for macOS",
   description:
-    "A native macOS app and CLI for reading and sharing markdown, built so long-form .md files actually feel good to read, and so any developer can publish one with a single terminal command.",
+    "A native macOS reader and CLI for .md files. Read long documents as pages, then share any file with a public link.",
   metadataBase: new URL("https://seshat.app"),
   openGraph: {
-    title: "Seshat a reading room for markdown",
+    title: "Seshat: A markdown reader for macOS",
     description:
-      "Open .md files in a calm, well-typeset reader. Share any local file as a link with one command.",
+      "Read .md files as documents on macOS. Share any local file with a public link.",
     type: "website",
   },
 };

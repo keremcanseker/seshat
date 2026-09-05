@@ -25,17 +25,17 @@ export default async function LoginPage() {
         </Link>
 
         <h1 className="font-heading text-ink m-0 mb-3 text-[30px] font-bold tracking-[-0.01em]">
-          Your shared library
+          Your shared pages
         </h1>
         <p className="text-ink-muted mx-auto m-0 mb-9 max-w-[300px] text-[15px] leading-[1.6]">
-          Sign in to see every markdown document you&rsquo;ve shared and its
-          link.
+          Sign in to view the markdown documents you have shared and manage
+          their links.
         </p>
 
         <GoogleSignInButton />
 
         <p className="text-ink-faint mt-8 text-[12px] leading-[1.5]">
-          Seshat only reads your name and email to identify your library.
+          Seshat reads your name and email only to identify your shared pages.
         </p>
       </div>
     </main>

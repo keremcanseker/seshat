@@ -31,9 +31,9 @@ export function DocList({ docs }: Props) {
           Nothing shared yet
         </h2>
         <p className="text-ink-muted m-0 max-w-[360px] text-[14px] leading-[1.6]">
-          Share a markdown file from the macOS app or the CLI with{" "}
-          <code className="font-mono text-[13px]">seshat share file.md</code> and
-          it&rsquo;ll show up here.
+          Share a markdown file from the macOS app or CLI with{" "}
+          <code className="font-mono text-[13px]">seshat share file.md</code>. It
+          will appear here.
         </p>
       </div>
     );

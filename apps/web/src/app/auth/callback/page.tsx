@@ -52,7 +52,7 @@ export default function AuthCallbackPage() {
               Sign-in didn&rsquo;t complete
             </h1>
             <p className="text-ink-muted m-0 mb-6 text-[14px] leading-[1.55]">
-              Something went wrong establishing your session.
+              Seshat could not establish your session.
             </p>
             <a
               href="/login"
