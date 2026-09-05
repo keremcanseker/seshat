@@ -14,7 +14,7 @@ export async function fetchSharedDoc(slug: string): Promise<SharedDoc | null> {
   let response: Response;
   try {
     response = await fetch(url, {
-      next: { revalidate: 60 },
+      cache: "no-store",
       headers: { Accept: "application/json" },
     });
   } catch {
