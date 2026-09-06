@@ -164,6 +164,7 @@ struct Sidebar: View {
                     ForEach(folder.files) { file in
                         SidebarFileRow(file: file)
                             .tag(file.url)
+                            .listRowBackground(rowBackground(isSelected: selection?.seshatMatches(file.url) == true))
                             .draggable(file.url) {
                                 FileDragPreview(name: file.name)
                             }
@@ -195,6 +196,15 @@ struct Sidebar: View {
                 presentImportFromToolbar()
             }
         }
+    }
+
+    /// The system sidebar highlight is the user's accent colour (blue by default) and
+    /// ignores `.tint`. An opaque row background painted over it keeps selection on-theme.
+    private func rowBackground(isSelected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(isSelected ? Color.seshatAccentSoft.opacity(0.3) : .clear)
+            .padding(.horizontal, 6)
+            .background(Color.seshatSidebarBg)
     }
 
     private var deleteAlertTitle: String {

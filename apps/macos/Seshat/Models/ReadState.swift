@@ -1,7 +1,7 @@
 import Foundation
 
-/// Tracks which library documents have been read. A file is "read" once the
-/// reader scrolls to its end; until then it shows an unread marker in the
+/// Tracks which library documents have been read. A file is "read" once it has
+/// been opened in the reader; until then it shows an unread marker in the
 /// sidebar. State is keyed by the file's standardized path and persisted in
 /// UserDefaults, mirroring `ShareStore`'s path-keyed approach but exposed as
 /// observable state so the sidebar updates live across windows.

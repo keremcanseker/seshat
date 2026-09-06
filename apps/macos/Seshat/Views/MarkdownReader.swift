@@ -37,11 +37,6 @@ struct MarkdownReader: View {
                     ForEach(parsed.sections) { section in
                         sectionView(section)
                     }
-                    if !parsed.sections.isEmpty {
-                        Color.clear
-                            .frame(height: 1)
-                            .onAppear { readState.markRead(fileURL) }
-                    }
                 }
             }
             .scrollTargetLayout()
@@ -114,65 +109,15 @@ struct MarkdownReader: View {
         }
         .navigationTitle("")
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                HStack(spacing: 6) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundStyle(Color.seshatFaint)
-                    Text(breadcrumb)
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(Color.seshatFaint)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                }
-                .help(fileURL.path)
-            }
-            ToolbarItemGroup(placement: .primaryAction) {
-                Toggle(isOn: $showOutline.animation(.easeInOut(duration: 0.22))) {
-                    Label("Outline", systemImage: "list.bullet.indent")
-                }
-                .toggleStyle(.button)
-                .disabled(parsed.outline.isEmpty || available.width < Self.outlineMinWidth)
-                .help(outlineToggleHelp)
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        appearance = appearance.toggled
-                    }
-                } label: {
-                    Image(systemName: appearance.nextSymbol)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .help(appearance.nextLabel)
-
-                Button(action: startExport) {
-                    if isExporting {
-                        ProgressView()
-                            .controlSize(.small)
-                            .progressViewStyle(.circular)
-                    } else {
-                        Label("Export as PDF", systemImage: "printer")
-                    }
-                }
-                .disabled(!canExport)
-                .help("Export as PDF (⌘⇧E)")
-
-                if authStore.isAuthenticated {
-                    Button(action: { Task { await share() } }) {
-                        if isSharing {
-                            ProgressView()
-                                .controlSize(.small)
-                                .progressViewStyle(.circular)
-                        } else {
-                            Label("Share", systemImage: "square.and.arrow.up")
-                        }
-                    }
-                    .disabled(isSharing || loadError != nil || rawContent.isEmpty)
-                    .help("Publish to seshat.page and copy the link")
-
-                    UserMenu(onShowSharedDocs: { showSharedDocs = true })
-                }
+            // macOS 26 wraps toolbar items in glass pills; Seshat's chrome stays flat.
+            if #available(macOS 26, *) {
+                ToolbarItem(placement: .navigation) { breadcrumbLabel }
+                    .sharedBackgroundVisibility(.hidden)
+                ToolbarItemGroup(placement: .primaryAction) { actions }
+                    .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItem(placement: .navigation) { breadcrumbLabel }
+                ToolbarItemGroup(placement: .primaryAction) { actions }
             }
         }
         .focusedSceneValue(\.exportPDF, exportAction)
@@ -188,6 +133,53 @@ struct MarkdownReader: View {
                     if toast == newValue { toast = nil }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) { showOutline.toggle() }
+        } label: {
+            Label("Outline", systemImage: "list.bullet.indent")
+                .foregroundStyle(outlineVisible ? Color.seshatAccent : Color.secondary)
+        }
+        .disabled(parsed.outline.isEmpty || available.width < Self.outlineMinWidth)
+        .help(outlineToggleHelp)
+
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) { appearance = appearance.toggled }
+        } label: {
+            Label(appearance.nextLabel, systemImage: appearance.nextSymbol)
+        }
+        .help(appearance.nextLabel)
+
+        Button(action: startExport) {
+            if isExporting {
+                ProgressView()
+                    .controlSize(.small)
+                    .progressViewStyle(.circular)
+            } else {
+                Label("Export as PDF", systemImage: "printer")
+            }
+        }
+        .disabled(!canExport)
+        .help("Export as PDF (⌘⇧E)")
+
+        if authStore.isAuthenticated {
+            Button(action: { Task { await share() } }) {
+                if isSharing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .progressViewStyle(.circular)
+                } else {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
+            .disabled(isSharing || loadError != nil || rawContent.isEmpty)
+            .help("Publish to seshat.page and copy the link")
+
+            UserMenu(onShowSharedDocs: { showSharedDocs = true })
         }
     }
 
@@ -218,13 +210,19 @@ struct MarkdownReader: View {
             && available.width >= Self.outlineMinWidth
     }
 
+    private var breadcrumbLabel: some View {
+        Text(breadcrumb)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.seshatMuted)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .help(fileURL.path)
+    }
+
+    /// "Folder › file.md", like Linear's breadcrumb. The full path lives in the tooltip.
     private var breadcrumb: String {
-        let path = fileURL.path
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        if path.hasPrefix(home + "/") {
-            return "~\(path.dropFirst(home.count))"
-        }
-        return path
+        let folder = fileURL.deletingLastPathComponent().lastPathComponent
+        return folder.isEmpty ? fileURL.lastPathComponent : "\(folder) › \(fileURL.lastPathComponent)"
     }
 
     private var outlineToggleHelp: String {
@@ -260,6 +258,8 @@ struct MarkdownReader: View {
             rawContent = raw
             parsed = MarkdownParser.parse(raw)
             loadError = nil
+            // Opening a file is reading it; no need to scroll to the end.
+            readState.markRead(fileURL)
         } catch {
             rawContent = ""
             loadError = error

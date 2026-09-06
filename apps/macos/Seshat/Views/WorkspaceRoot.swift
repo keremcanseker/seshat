@@ -4,12 +4,13 @@ struct WorkspaceRoot: View {
     let library: Library
     @Binding var selection: URL?
     @State private var reloadTick: Int = 0
+    @State private var columns: NavigationSplitViewVisibility = .all
 
     @Environment(AppRouter.self) private var router
     @Environment(ReadState.self) private var readState
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columns) {
             Sidebar(
                 library: library,
                 selection: $selection,
@@ -19,6 +20,17 @@ struct WorkspaceRoot: View {
                 onItemMoved: handleFileURLChange,
                 onItemDeleted: handleItemDeleted
             )
+            // The system toggle jumps between the sidebar's trailing edge and the
+            // detail's leading edge; ours stays put next to the traffic lights, like Linear.
+            .toolbar(removing: .sidebarToggle)
+            .toolbar {
+                if #available(macOS 26, *) {
+                    ToolbarItem(placement: .automatic) { sidebarToggle }
+                        .sharedBackgroundVisibility(.hidden)
+                } else {
+                    ToolbarItem(placement: .automatic) { sidebarToggle }
+                }
+            }
             .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 360)
         } detail: {
             if let selection {
@@ -31,6 +43,18 @@ struct WorkspaceRoot: View {
         .onChange(of: router.workspaceRefreshTick) { _, _ in
             refresh()
         }
+    }
+
+    private var sidebarToggle: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                columns = columns == .detailOnly ? .all : .detailOnly
+            }
+        } label: {
+            Label("Toggle Sidebar", systemImage: "sidebar.left")
+        }
+        .keyboardShortcut("s", modifiers: [.command, .control])
+        .help("Toggle Sidebar (⌃⌘S)")
     }
 
     private func refresh() {

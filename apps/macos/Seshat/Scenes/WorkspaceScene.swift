@@ -14,7 +14,7 @@ struct WorkspaceScene: Scene {
             )
             .frame(minWidth: 760, minHeight: 480)
         }
-        .windowToolbarStyle(.unified)
+        .windowToolbarStyle(.unifiedCompact)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 1180, height: 800)
     }

@@ -47,6 +47,9 @@ struct SeshatCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
+            Button("Toggle Dark Theme", action: toggleAppearance)
+                .keyboardShortcut("d", modifiers: [.command, .option])
+
             Button("Refresh Library") {
                 router.requestWorkspaceRefresh()
             }
@@ -66,6 +69,13 @@ struct SeshatCommands: Commands {
 
     private func printFocusedDocument() {
         printDocument?()
+    }
+
+    /// Writes the same key every `@AppStorage("seshatAppearance")` observes.
+    private func toggleAppearance() {
+        let defaults = UserDefaults.standard
+        let current = AppearanceMode(rawValue: defaults.string(forKey: "seshatAppearance") ?? "") ?? .light
+        defaults.set(current.toggled.rawValue, forKey: "seshatAppearance")
     }
 
     @MainActor

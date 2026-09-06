@@ -5,7 +5,7 @@ struct ReaderScene: Scene {
         WindowGroup("Seshat", for: URL.self) { $fileURL in
             ReaderRoot(fileURL: fileURL)
         }
-        .windowToolbarStyle(.unified)
+        .windowToolbarStyle(.unifiedCompact)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 880, height: 720)
     }

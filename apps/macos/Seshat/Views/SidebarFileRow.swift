@@ -18,6 +18,7 @@ struct SidebarFileRow: View {
                 .foregroundStyle(Color.seshatFaint)
             Text(file.name)
                 .font(.system(size: 13, weight: isUnread ? .semibold : .regular))
+                .foregroundStyle(Color.seshatBodyText)   // stays put when the row is selected
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 4)
