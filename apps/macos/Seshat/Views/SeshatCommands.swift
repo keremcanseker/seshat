@@ -6,6 +6,9 @@ struct SeshatCommands: Commands {
     let router: AppRouter
     let updaterController: UpdaterController
 
+    @FocusedValue(\.exportPDF) private var exportPDF
+    @FocusedValue(\.printDocument) private var printDocument
+
     var body: some Commands {
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") {
@@ -29,6 +32,18 @@ struct SeshatCommands: Commands {
                 }
             }
             .keyboardShortcut("o", modifiers: [.command, .shift])
+
+            Divider()
+
+            Button("Export as PDF…", action: exportFocusedDocument)
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(exportPDF == nil)
+        }
+
+        CommandGroup(replacing: .printItem) {
+            Button("Print…", action: printFocusedDocument)
+                .keyboardShortcut("p", modifiers: .command)
+                .disabled(printDocument == nil)
         }
 
         CommandGroup(after: .toolbar) {
@@ -43,6 +58,14 @@ struct SeshatCommands: Commands {
                 NSWorkspace.shared.open(Library.defaultRootURL)
             }
         }
+    }
+
+    private func exportFocusedDocument() {
+        exportPDF?()
+    }
+
+    private func printFocusedDocument() {
+        printDocument?()
     }
 
     @MainActor

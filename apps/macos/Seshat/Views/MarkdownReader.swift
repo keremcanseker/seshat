@@ -1,5 +1,6 @@
 import AppKit
 import MarkdownUI
+import PDFKit
 import SwiftUI
 
 struct MarkdownReader: View {
@@ -13,6 +14,7 @@ struct MarkdownReader: View {
     @State private var available: CGSize = .zero
     @State private var scrolledSectionId: String?
     @State private var isSharing: Bool = false
+    @State private var isExporting: Bool = false
     @State private var toast: ShareToast?
     @State private var showSearch: Bool = false
     @State private var searchQuery: String = ""
@@ -144,6 +146,18 @@ struct MarkdownReader: View {
                 }
                 .help(appearance.nextLabel)
 
+                Button(action: startExport) {
+                    if isExporting {
+                        ProgressView()
+                            .controlSize(.small)
+                            .progressViewStyle(.circular)
+                    } else {
+                        Label("Export as PDF", systemImage: "printer")
+                    }
+                }
+                .disabled(!canExport)
+                .help("Export as PDF (⌘⇧E)")
+
                 if authStore.isAuthenticated {
                     Button(action: { Task { await share() } }) {
                         if isSharing {
@@ -161,6 +175,8 @@ struct MarkdownReader: View {
                 }
             }
         }
+        .focusedSceneValue(\.exportPDF, exportAction)
+        .focusedSceneValue(\.printDocument, printAction)
         .task(id: ReaderLoadKey(url: fileURL, tick: reloadTick)) {
             await load()
         }
@@ -173,6 +189,27 @@ struct MarkdownReader: View {
                 }
             }
         }
+    }
+
+    private var canExport: Bool {
+        !isExporting && loadError == nil && !rawContent.isEmpty
+    }
+
+    /// nil while nothing can be exported, which disables the File menu item.
+    private var exportAction: (@MainActor () -> Void)? {
+        canExport ? startExport : nil
+    }
+
+    private func startExport() {
+        Task { await exportPDF() }
+    }
+
+    private var printAction: (@MainActor () -> Void)? {
+        canExport ? startPrint : nil
+    }
+
+    private func startPrint() {
+        Task { await printDocument() }
     }
 
     private var outlineVisible: Bool {
@@ -260,6 +297,71 @@ struct MarkdownReader: View {
             ))
         } catch APIError.unauthorized {
             present(toast: .init(kind: .failure, message: "Session expired. Please sign in again."))
+        } catch {
+            present(toast: .init(kind: .failure, message: error.localizedDescription))
+        }
+    }
+
+    private func exportPDF() async {
+        guard !isExporting else { return }
+        let title = fileURL.deletingPathExtension().lastPathComponent
+        // Same reasoning as share(): export what is saved on disk, not a stale render.
+        await load()
+        guard loadError == nil else {
+            present(toast: .init(kind: .failure, message: "Couldn't read the file before exporting."))
+            return
+        }
+        guard !rawContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            present(toast: .init(kind: .failure, message: "Nothing to export, the file is empty."))
+            return
+        }
+        guard let choice = PDFSavePanel.run(suggestedName: "\(title).pdf") else { return }
+        isExporting = true
+        defer { isExporting = false }
+        do {
+            try await PDFExporter.export(
+                parsed,
+                baseURL: fileURL.deletingLastPathComponent(),
+                to: choice.url,
+                landscape: choice.landscape
+            )
+            present(toast: .init(
+                kind: .success,
+                message: "Exported · \(choice.url.lastPathComponent)",
+                openURL: choice.url
+            ))
+        } catch {
+            present(toast: .init(kind: .failure, message: error.localizedDescription))
+        }
+    }
+
+    /// Print goes through the same PDF pipeline, so paper matches the export exactly.
+    private func printDocument() async {
+        guard !isExporting else { return }
+        await load()
+        guard loadError == nil else {
+            present(toast: .init(kind: .failure, message: "Couldn't read the file before printing."))
+            return
+        }
+        guard !rawContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            present(toast: .init(kind: .failure, message: "Nothing to print, the file is empty."))
+            return
+        }
+        isExporting = true
+        defer { isExporting = false }
+        let temporary = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        do {
+            try await PDFExporter.export(
+                parsed,
+                baseURL: fileURL.deletingLastPathComponent(),
+                to: temporary,
+                landscape: false
+            )
+            guard let operation = PDFDocument(url: temporary)?
+                .printOperation(for: .shared, scalingMode: .pageScaleNone, autoRotate: true)
+            else { throw PDFExporter.Failure.renderFailed }
+            operation.run()
         } catch {
             present(toast: .init(kind: .failure, message: error.localizedDescription))
         }
