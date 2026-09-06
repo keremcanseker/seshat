@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { Me } from "@/lib/plans";
 import {
   SESHAT_API_BASE,
   SESSION_COOKIE,
@@ -41,6 +42,19 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   }
   if (!res.ok) return null;
   return (await res.json()) as SessionUser;
+}
+
+/** Plan, entitlements and link usage via `GET /me`, or null when signed out. */
+export async function getMe(): Promise<Me | null> {
+  const token = await getSessionToken();
+  if (!token) return null;
+
+  const res = await fetch(`${SESHAT_API_BASE}/me`, {
+    headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as Me;
 }
 
 /** Lists the signed-in user's shared documents via `GET /docs/me`. */

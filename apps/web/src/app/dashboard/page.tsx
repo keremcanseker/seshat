@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DocList } from "@/components/doc-list";
 import { SeshatMark } from "@/components/seshat-mark";
-import { getCurrentUser, getMyDocs } from "@/lib/auth";
+import { getCurrentUser, getMe, getMyDocs } from "@/lib/auth";
+import type { Me } from "@/lib/plans";
 import { logoutAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const docs = await getMyDocs();
+  const [docs, me] = await Promise.all([getMyDocs(), getMe()]);
 
   return (
     <main className="bg-paper text-ink min-h-screen font-sans">
@@ -31,6 +32,12 @@ export default async function DashboardPage() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
+            <Link
+              href="/pricing"
+              className="text-ink-muted hover:text-ink text-[13px] transition-colors"
+            >
+              Pricing
+            </Link>
             <span className="text-ink-muted hidden text-[13px] sm:inline">
               {user.email}
             </span>
@@ -61,8 +68,53 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        {me ? <PlanRow me={me} /> : null}
+
         <DocList docs={docs} />
       </section>
     </main>
+  );
+}
+
+/** Plan and link usage, from GET /me. The counter is visible before any wall. */
+function PlanRow({ me }: { me: Me }) {
+  const { activeLinks, limit } = me.usage;
+  const usage =
+    limit === null
+      ? `${activeLinks} ${activeLinks === 1 ? "link" : "links"}`
+      : `${activeLinks} of ${limit} free links`;
+  const premium = me.plan === "premium";
+
+  return (
+    <div className="border-rule mb-6 flex items-center justify-between gap-4 rounded-lg border-[0.5px] px-5 py-3.5">
+      <p className="m-0 text-[13px]">
+        <span className="text-ink font-medium">{premium ? "Premium" : "Free plan"}</span>
+        <span className="text-ink-faint"> · </span>
+        <span className="text-ink-muted tabular-nums">{usage}</span>
+        {me.planStatus === "canceled" && me.planPeriodEnd ? (
+          <span className="text-ink-faint">
+            {" "}
+            · ends {new Date(me.planPeriodEnd).toLocaleDateString("en-US", { dateStyle: "medium" })}
+          </span>
+        ) : null}
+      </p>
+      {premium ? (
+        <button
+          type="button"
+          disabled
+          title="Coming soon"
+          className="border-rule-strong text-ink-muted h-8 rounded-md border-[0.5px] px-3.5 text-[12px] font-medium disabled:opacity-60"
+        >
+          Manage subscription
+        </button>
+      ) : (
+        <Link
+          href="/pricing"
+          className="btn-ink inline-flex h-8 items-center rounded-md px-3.5 text-[12px] font-medium no-underline"
+        >
+          Upgrade
+        </Link>
+      )}
+    </div>
   );
 }
