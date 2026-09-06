@@ -181,6 +181,7 @@ struct Sidebar: View {
         // .plain sizes rows from content, which is how we get Linear's 26pt.
         .listStyle(.plain)
         .listSectionSeparator(.hidden)
+        .focusEffectDisabled()   // no focus ring around the list when a row is clicked
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 26)
         .dropDestination(for: URL.self) { urls, _ in
@@ -417,9 +418,6 @@ struct Sidebar: View {
 
         guard library.deleteItem(at: url) else { return }
 
-        if selection?.seshatMatches(url) == true {
-            selection = nil
-        }
         if importDestinationFolderURL?.seshatMatches(url) == true {
             syncImportDestination()
         }
@@ -465,10 +463,11 @@ struct Sidebar: View {
             return
         }
         importDestinationFolderURL = folder.url
+        // The owner remaps its state first so re-selecting the new URL finds it already there.
+        onItemMoved(oldURL, newURL)
         if selection?.seshatMatches(oldURL) == true {
             selection = newURL
         }
-        onItemMoved(oldURL, newURL)
     }
 
     private func commitRename() {
@@ -480,10 +479,10 @@ struct Sidebar: View {
 
         guard let newURL = library.renameItem(at: oldURL, to: draft) else { return }
 
+        onURLRenamed(oldURL, newURL)
         if selection?.seshatMatches(oldURL) == true {
             selection = newURL
         }
-        onURLRenamed(oldURL, newURL)
     }
 
     private func handleImportResult(_ result: Result<[URL], Error>) {

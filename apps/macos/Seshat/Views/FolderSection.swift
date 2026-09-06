@@ -16,13 +16,29 @@ struct FolderSection<Files: View>: View {
     // ponytail: in-memory only; persist per folder if people keep re-collapsing after launch.
     @State private var isExpanded = true
 
+    // Not a `Section`: List sections draw their own hairline under the header on macOS
+    // and ignore the separator modifiers. A plain header row has nothing to draw.
     var body: some View {
-        Section {
+        Group {
+            header
+                .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 2, trailing: 8))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.seshatSidebarBg)
+                .selectionDisabled()
             if isExpanded {
                 files()
             }
-        } header: {
-            HStack(spacing: 4) {
+        }
+        .dropDestination(for: URL.self) { urls, _ in
+            onDrop(urls)
+            return true
+        } isTargeted: { isTargeted in
+            hovering = isTargeted
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 4) {
                 if isImportDestination {
                     Image(systemName: "arrow.down.circle.fill")
                         .font(.system(size: 9))
@@ -73,13 +89,6 @@ struct FolderSection<Files: View>: View {
                     onDeleteFolder()
                 }
             }
-        }
-        .dropDestination(for: URL.self) { urls, _ in
-            onDrop(urls)
-            return true
-        } isTargeted: { isTargeted in
-            hovering = isTargeted
-        }
     }
 
     private var headerBackground: Color {
