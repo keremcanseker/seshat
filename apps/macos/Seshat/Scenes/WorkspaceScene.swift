@@ -39,7 +39,7 @@ private struct WorkspaceRootContainer: View {
                 SignInView()
             }
         }
-        .overlay(alignment: .bottom) {
+        .overlay(alignment: .bottomTrailing) {
             if let info = updateChecker.available {
                 UpdateBanner(
                     info: info,

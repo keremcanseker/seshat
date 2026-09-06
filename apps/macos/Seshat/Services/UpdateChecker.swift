@@ -3,6 +3,7 @@ import Foundation
 struct UpdateInfo: Equatable {
     let version: String
     let downloadURL: URL
+    var notes: String? = nil
 }
 
 /// Polls our own server (`/version`) on launch and surfaces a newer build so
@@ -16,10 +17,6 @@ final class UpdateChecker {
     private(set) var available: UpdateInfo?
 
     private let currentVersion: String
-    private var dismissedVersion: String? {
-        get { UserDefaults.standard.string(forKey: "SeshatDismissedUpdateVersion") }
-        set { UserDefaults.standard.set(newValue, forKey: "SeshatDismissedUpdateVersion") }
-    }
 
     init(currentVersion: String = UpdateChecker.bundleVersion) {
         self.currentVersion = currentVersion
@@ -42,18 +39,17 @@ final class UpdateChecker {
 
             let latest = Self.normalize(info.version)
             guard Self.isVersion(latest, newerThan: Self.normalize(currentVersion)) else { return }
-            guard latest != dismissedVersion else { return }
             guard let downloadURL = URL(string: info.url) else { return }
 
-            available = UpdateInfo(version: latest, downloadURL: downloadURL)
+            available = UpdateInfo(version: latest, downloadURL: downloadURL, notes: info.notes)
             seshatLog("UpdateChecker — update available: \(latest) (current \(currentVersion))")
         } catch {
             seshatLog("UpdateChecker — check failed: \(error.localizedDescription)")
         }
     }
 
+    /// Snooze only: the card comes back on the next launch while the update is pending.
     func dismiss() {
-        dismissedVersion = available?.version
         available = nil
     }
 
