@@ -105,3 +105,14 @@ targets:
         product: MarkdownUI
       - package: Sparkle
         product: Sparkle
+
+  SeshatTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SeshatTests
+    dependencies:
+      - target: Seshat
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
