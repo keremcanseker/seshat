@@ -7,6 +7,7 @@ import { authRoute } from "./routes/auth";
 import { docsRoute } from "./routes/docs";
 import { downloadsRoute } from "./routes/downloads";
 import { healthRoute } from "./routes/health";
+import { meRoute } from "./routes/me";
 import { plansRoute } from "./routes/plans";
 import { releaseRoute } from "./routes/release";
 
@@ -31,16 +32,20 @@ app.route("/health", healthRoute);
 app.route("/auth", authRoute);
 app.route("/docs", docsRoute);
 app.route("/plans", plansRoute);
+app.route("/me", meRoute);
 app.route("/downloads", downloadsRoute);
 app.route("/", releaseRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
-    return c.json({ error: err.message }, err.status);
+    // 402s carry a structured body (lib/entitlements.ts); everything else is { error }.
+    return err.res ?? c.json({ error: err.message }, err.status);
   }
   console.error(err);
   return c.json({ error: "internal server error" }, 500);
 });
+
+export { app };
 
 export default {
   port: env.PORT,

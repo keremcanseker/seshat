@@ -5,8 +5,9 @@ import { z } from "zod";
 import { db } from "../db/client";
 import { documents } from "../db/schema";
 import { env } from "../env";
+import { assertCanCreateDocument, assertCanUpdateDocument } from "../lib/entitlements";
 import { generateSlug } from "../lib/slug";
-import { requireUser, type AuthVariables } from "../middleware/auth";
+import { loadUserRow, requireUser, type AuthVariables } from "../middleware/auth";
 
 const MAX_CONTENT_BYTES = 1_000_000;
 
@@ -38,7 +39,8 @@ docsRoute.post("/", requireUser, async (c) => {
       message: parsed.error.issues.map((i) => i.message).join("; "),
     });
   }
-  const user = c.get("user");
+  const user = await loadUserRow(c);
+  await assertCanCreateDocument(user);
   const { title, content } = parsed.data;
   const slug = generateSlug();
   const [row] = await db
@@ -74,7 +76,8 @@ docsRoute.put("/:slug", requireUser, async (c) => {
       message: parsed.error.issues.map((i) => i.message).join("; "),
     });
   }
-  const user = c.get("user");
+  const user = await loadUserRow(c);
+  await assertCanUpdateDocument(user, slugParsed.data.slug);
   const { title, content } = parsed.data;
   const [row] = await db
     .update(documents)
