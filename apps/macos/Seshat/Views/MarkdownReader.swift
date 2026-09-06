@@ -200,6 +200,7 @@ struct MarkdownReader: View {
     private func sectionView(_ section: MarkdownSection) -> some View {
         SearchableSection(
             content: section.content,
+            baseURL: fileURL.deletingLastPathComponent(),
             query: isSearching ? trimmedQuery : "",
             isCurrent: section.id == currentMatchSectionId
         )
@@ -367,12 +368,13 @@ private struct ReaderLoadKey: Hashable {
 /// flatten for the duration of the search.
 private struct SearchableSection: View {
     let content: String
+    let baseURL: URL    // resolves relative image paths against the file's folder
     let query: String   // trimmed; empty == not searching
     let isCurrent: Bool
 
     var body: some View {
         if query.isEmpty {
-            Markdown(content)
+            Markdown(content, baseURL: baseURL)
                 .markdownTheme(.seshat)
                 .textSelection(.enabled)
         } else {
