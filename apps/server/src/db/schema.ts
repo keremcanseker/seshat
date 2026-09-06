@@ -11,6 +11,12 @@ export const users = pgTable(
     email: text("email").notNull().unique(),
     name: text("name"),
     avatarUrl: text("avatar_url"),
+    // Billing state, written only by the Polar webhook (lib/plans.ts, lib/entitlements.ts).
+    plan: text("plan").notNull().default("free"),
+    planStatus: text("plan_status"), // active | canceled | past_due | null
+    planPeriodEnd: timestamp("plan_period_end", { withTimezone: true }),
+    polarCustomerId: text("polar_customer_id"),
+    polarSubscriptionId: text("polar_subscription_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .default(sql`now()`),
@@ -21,6 +27,7 @@ export const users = pgTable(
   (t) => [
     index("users_google_sub_idx").on(t.googleSub),
     index("users_email_idx").on(t.email),
+    index("users_polar_customer_idx").on(t.polarCustomerId),
   ],
 );
 
