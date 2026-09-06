@@ -104,6 +104,10 @@ final class AppRouter {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
+        if case .exportPDF(let source, let output, let landscape) = action {
+            Task { await exportHeadless(source: source, to: output, landscape: landscape) }
+            return
+        }
         guard let openWindow else {
             pending.append(url)
             seshatLog("AppRouter.handle — not bound; queued: \(url)")
@@ -117,8 +121,32 @@ final class AppRouter {
             openInWorkspace(fileURL, openWindow: openWindow)
         case .openWorkspace(let fileURL):
             openInWorkspace(fileURL, openWindow: openWindow)
-        case .signInCallback:
+        case .signInCallback, .exportPDF:
             break
+        }
+    }
+
+    /// The `seshat export` path. The CLI cannot read our stderr, so a failure is
+    /// left next to the requested output as `<name>.pdf.error` for it to relay.
+    private func exportHeadless(source: URL, to output: URL, landscape: Bool) async {
+        let errorFile = output.appendingPathExtension("error")
+        do {
+            let markdown = try String(contentsOf: source, encoding: .utf8)
+            guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw CocoaError(.fileReadCorruptFile, userInfo: [
+                    NSLocalizedDescriptionKey: "Nothing to export, the file is empty.",
+                ])
+            }
+            try await PDFExporter.export(
+                MarkdownParser.parse(markdown),
+                baseURL: source.deletingLastPathComponent(),
+                to: output,
+                landscape: landscape
+            )
+            seshatLog("AppRouter.exportHeadless — wrote \(output.path)")
+        } catch {
+            seshatLog("AppRouter.exportHeadless — failed: \(error.localizedDescription)")
+            try? Data(error.localizedDescription.utf8).write(to: errorFile)
         }
     }
 

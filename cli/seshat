@@ -11,6 +11,8 @@ seshat — native macOS markdown reader
 usage:
   seshat open <file.md>       Open a file in a reader window
   seshat global [<file.md>]   Open the workspace (reveals file in sidebar if given)
+  seshat export <file.md> [out.pdf] [--landscape]
+                              Save a PDF (default: next to the file, same name)
   seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)
   seshat help                 Show this message
 EOF
@@ -34,6 +36,24 @@ url_encode() {
         -e 's|&|%26|g'
 }
 
+# Send a seshat:// URL to the app this script is bundled in, so a second copy of
+# Seshat (an older release beside a dev build, say) never steals the request.
+open_url() {
+    script="$0"
+    while [ -L "$script" ]; do
+        link="$(readlink "$script")"
+        case "$link" in
+            /*) script="$link" ;;
+            *)  script="$(dirname "$script")/$link" ;;
+        esac
+    done
+    app="$(cd "$(dirname "$script")/../.." 2>/dev/null && pwd)"
+    case "$app" in
+        *.app) open -a "$app" "$1" ;;
+        *)     open "$1" ;;
+    esac
+}
+
 cmd="${1:-}"
 [ -z "$cmd" ] && { usage; exit 1; }
 shift || true
@@ -50,7 +70,7 @@ case "$cmd" in
         fi
         abs="$(abs_path "$1")"
         encoded="$(url_encode "$abs")"
-        open "seshat://open?path=$encoded"
+        open_url "seshat://open?path=$encoded"
         ;;
 
     global)
@@ -61,10 +81,54 @@ case "$cmd" in
             fi
             abs="$(abs_path "$1")"
             encoded="$(url_encode "$abs")"
-            open "seshat://global?path=$encoded"
+            open_url "seshat://global?path=$encoded"
         else
-            open "seshat://global"
+            open_url "seshat://global"
         fi
+        ;;
+
+    export)
+        src=""; out=""; landscape=0
+        for arg in "$@"; do
+            case "$arg" in
+                --landscape) landscape=1 ;;
+                --portrait) landscape=0 ;;
+                -*) echo "seshat export: unknown option '$arg'" >&2; exit 1 ;;
+                *) if [ -z "$src" ]; then src="$arg"; elif [ -z "$out" ]; then out="$arg"; else
+                       echo "seshat export: too many arguments" >&2; exit 1; fi ;;
+            esac
+        done
+        if [ -z "$src" ]; then
+            echo "seshat export: missing <file.md>" >&2
+            exit 1
+        fi
+        if [ ! -f "$src" ]; then
+            echo "seshat: file not found: $src" >&2
+            exit 1
+        fi
+        src="$(abs_path "$src")"
+        [ -z "$out" ] && out="${src%.*}.pdf"
+        out="$(abs_path "$out")"
+        rm -f "$out.error"
+        started="$(date +%s)"
+        open_url "seshat://export?path=$(url_encode "$src")&out=$(url_encode "$out")&landscape=$landscape"
+        # The app renders in the background; wait for the file (or an error note) to land.
+        tries=0
+        while [ "$tries" -lt 150 ]; do
+            if [ -f "$out.error" ]; then
+                echo "seshat: $(cat "$out.error")" >&2
+                rm -f "$out.error"
+                exit 1
+            fi
+            if [ -f "$out" ] && [ "$(stat -f %m "$out")" -ge "$started" ]; then
+                echo "$out"
+                exit 0
+            fi
+            sleep 0.2
+            tries=$((tries + 1))
+        done
+        echo "seshat: export timed out; is Seshat installed and allowed to open seshat:// links?" >&2
+        exit 1
         ;;
 
     install)
