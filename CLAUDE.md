@@ -71,7 +71,7 @@ Seshat/
 | Stack | **Native SwiftUI** macOS app. User explicitly chose 100% native feel over cross-platform reuse. |
 | Min target | **macOS 14 (Sonoma)** |
 | Swift | 6.0 with `SWIFT_STRICT_CONCURRENCY: complete` |
-| Markdown lib | [`swift-markdown-ui`](https://github.com/gonzalezreal/swift-markdown-ui) (MarkdownUI) — the **only** third-party dep |
+| Markdown lib | [`swift-markdown-ui`](https://github.com/gonzalezreal/swift-markdown-ui) (MarkdownUI). Sparkle is the only other third-party dep (updates). |
 | Project gen | xcodegen (`brew install xcodegen`) — `project.yml` is canonical |
 | Library model | Managed folder at `~/Seshat/` — top-level subfolders are workspaces |
 | URL scheme | `seshat://` (`open` and `global` hosts) |
@@ -108,7 +108,7 @@ open "$(find ~/Library/Developer/Xcode/DerivedData -name 'Seshat.app' -path '*/D
 "$(...)/Seshat.app/Contents/Resources/seshat" install ~/.local/bin/seshat
 ```
 
-After install, the CLI works from any terminal: `seshat open file.md`, `seshat global file.md`, `seshat help`.
+After install, the CLI works from any terminal: `seshat open file.md`, `seshat global file.md`, `seshat export file.md`, `seshat help`.
 
 ### Clean-state debug helper
 
@@ -186,7 +186,20 @@ The MVP is the macOS app + CLI. Three larger phases follow, in this order.
 - [x] App icon: `AppIcon.appiconset/icon_1024.png` is the master (letterpress emblem on cream paper); smaller sizes and `apps/web/src/app/apple-icon.png` are downscaled from it
 - [ ] Code-sign + notarize for distribution outside the Xcode build tree
 
-### Editing mode (v0.2) — shipped
+### PDF export (KER-792) — shipped
+
+`⌘⇧E`, File > Export as PDF…, or the printer toolbar button. Save panel carries one Portrait/Landscape choice (remembered in `seshatExportLandscape`). Always re-reads the file from disk, like Share.
+
+- **Pipeline:** `PrintDocument` (non-lazy VStack of sections, `Theme.seshatPrint`) → `ImageRenderer` → one `CGPDFContext` page per cut from `PageLayout.cuts` (pure, unit-tested). Vector text, white paper, fixed light palette, 12pt body, system default paper size, 2 cm margins.
+- **Smart pagination:** every block reports its frame via `printBlock(_:)` (a `GeometryReader` in the block's background that writes into `PrintDocument.Sink` through the environment; preferences were tried first, `anchorPreference` hides nested blocks and `transformAnchorPreference` crashes under `ImageRenderer`). Any block that fits on a page moves whole to the next page rather than being sliced; headings, chained headings included, travel with the first lines of what follows. Table cells report too, so a table taller than a page splits between rows, its header row is drawn again on each continuation page (`PageLayout.Page.repeatedHeader`), and a header is never left alone at a page bottom.
+- **Outline:** headings report their plain text and level; after rendering, PDFKit adds nested bookmarks pointing at each heading's page.
+- **Code blocks** render as one `Text` per line (`PrintCodeBlock`) so page breaks land between lines. **Print…** (`⌘P`) runs the same pipeline into a temp PDF and hands it to `PDFDocument.printOperation`.
+- **Images:** local files load synchronously; `![](http…)` URLs are prefetched with a 5 s timeout before rendering, unreachable ones render as nothing.
+- **MarkdownUI + ImageRenderer gotchas** (why the print theme looks the way it does): `markdownMargin` resolves through `onPreferenceChange` → `@State`, which never settles in the renderer's one-shot layout, so the print theme spaces blocks with plain `padding`. Text blocks need `fixedSize(horizontal: false, vertical: true)` or they truncate with `…`. The default async image provider renders as an empty gap, hence `PrintImageProvider`. Each page's clip is inset by 0.5pt: a line that only touches the clip edge would otherwise stay in the content stream as invisible, selectable text.
+- **CLI:** `seshat export file.md [out.pdf] [--landscape]` opens `seshat://export?path=…&out=…&landscape=1`; `AppRouter.exportHeadless` renders without a window and, on failure, leaves `<out>.pdf.error` for the shell script to print. The script waits up to 30 s for the file.
+- Tests live in `apps/macos/SeshatTests` (`xcodebuild test -scheme Seshat`); `samples/export.md` is the pagination fixture.
+
+### Editing mode (v0.2) — dropped for now (commit `4d29b3b`), design below kept for when it returns
 
 **Decision (KER-269): minimal in-place block toggle.** Not split-view, not full WYSIWYG. The reader stays the editor — no separate panes, no layout reflow when you enter edit mode.
 
@@ -245,7 +258,7 @@ Quitting Seshat preserves window state. Re-launching restores everything — inc
 - **`@Observable @MainActor`** for any class holding shared UI state. Mark `static let theme = Theme()...` as `@MainActor` (`MarkdownUI.Theme` isn't Sendable).
 - **`foregroundStyle()` not `foregroundColor()`**, **`clipShape(.rect(cornerRadius:))` not `cornerRadius()`**, **`.onChange(of: x) { _, _ in }`** (two-param), **`@Entry` macro** for custom EnvironmentValues, **`.overlay(alignment:content:)`** form. Full list in `.claude/skills/swiftui-pro/references/api.md`.
 - **No `ObservableObject` / `@Published` / `@StateObject` / `@EnvironmentObject`** — use `@Observable` + `@State` / `@Bindable` / `@Environment(SomeType.self)`.
-- **No third-party deps without asking the user first.** MarkdownUI is the only one; Splash for code highlighting comes through MarkdownUI transitively.
+- **No third-party deps without asking the user first.** MarkdownUI and Sparkle are the only ones; Splash for code highlighting comes through MarkdownUI transitively.
 - **Don't downgrade Swift strict concurrency** to silence errors. Solve them properly with `@MainActor` annotations or `@Sendable` boundaries.
 - **Don't add `// removed: ...` comments or backwards-compat shims.** If something is unused, delete it.
 - **Don't write design docs to disk** during planning. Discuss in chat, get approval, implement. (Global user rule.)
