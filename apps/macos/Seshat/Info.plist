@@ -61,6 +61,19 @@
 	<string>https://dl.seshat.page/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>d20D7B1PXpBbMWMW6j+iIg/HZhhME5RwHSMfM44Apq8=</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Seshat Workspace Tab</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.keremcan.seshat.tab</string>
+		</dict>
+	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>

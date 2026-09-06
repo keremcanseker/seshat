@@ -47,3 +47,6 @@ scripts/release.env
 
 # Sparkle release tooling (binaries; private signing key lives in Keychain)
 scripts/.sparkle-tools/
+
+# llvm coverage
+*.profraw

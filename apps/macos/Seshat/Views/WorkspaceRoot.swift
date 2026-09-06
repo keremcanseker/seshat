@@ -2,18 +2,36 @@ import SwiftUI
 
 struct WorkspaceRoot: View {
     let library: Library
-    @Binding var selection: URL?
+    let tabs: WorkspaceTabs
     @State private var reloadTick: Int = 0
     @State private var columns: NavigationSplitViewVisibility = .all
+    @State private var collapsedFolders: Set<URL> = []
+    @State private var revealTick: Int = 0
 
     @Environment(AppRouter.self) private var router
     @Environment(ReadState.self) private var readState
+
+    /// Sidebar highlight == active tab. A row click opens a preview tab (⌘-click a permanent
+    /// one). `List` writes nil on empty-area clicks; ignored, tabs close explicitly.
+    private var selection: Binding<URL?> {
+        Binding(
+            get: { tabs.active },
+            set: { url in
+                guard let url else { return }
+                let permanent = NSEvent.modifierFlags.contains(.command)
+                tabs.open(url, asPreview: !permanent)
+            }
+        )
+    }
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columns) {
             Sidebar(
                 library: library,
-                selection: $selection,
+                selection: selection,
+                collapsedFolders: $collapsedFolders,
+                revealTick: revealTick,
+                onOpenPermanently: { tabs.open($0) },
                 onRefresh: refresh,
                 onRevealLibrary: revealLibrary,
                 onURLRenamed: handleFileURLChange,
@@ -25,41 +43,79 @@ struct WorkspaceRoot: View {
             .toolbar(removing: .sidebarToggle)
             .toolbar {
                 if #available(macOS 26, *) {
-                    ToolbarItem(placement: .automatic) { sidebarToggle }
+                    ToolbarItemGroup(placement: .automatic) { sidebarToggle; WorkspaceTabNavButtons(tabs: tabs) }
                         .sharedBackgroundVisibility(.hidden)
                 } else {
-                    ToolbarItem(placement: .automatic) { sidebarToggle }
+                    ToolbarItemGroup(placement: .automatic) { sidebarToggle; WorkspaceTabNavButtons(tabs: tabs) }
                 }
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 360)
         } detail: {
-            if let selection {
-                MarkdownReader(fileURL: selection, reloadTick: reloadTick)
-            } else {
-                EmptyDetail()
+            Group {
+                if let active = tabs.active {
+                    MarkdownReader(fileURL: active, reloadTick: reloadTick, onRevealInSidebar: revealInSidebar)
+                } else {
+                    EmptyDetail()
+                }
+            }
+            .environment(tabs)
+            // Dropping a file anywhere on the page opens it as a permanent tab, same path as `seshat open`.
+            .dropDestination(for: URL.self) { urls, _ in
+                let files = urls.filter { Library.markdownExtensions.contains($0.pathExtension.lowercased()) }
+                guard !files.isEmpty else { return false }
+                router.handle(urls: files)
+                return true
+            }
+            // View-scoped shortcuts, the ⌘F pattern; keeps nine ⌘-number items out of the menus.
+            .background {
+                ForEach(1...9, id: \.self) { number in
+                    Button("") { tabs.activate(number: number) }
+                        .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
+                }
+                Button("", action: tabs.activateNext)
+                    .keyboardShortcut(.tab, modifiers: .control)
+                Button("", action: tabs.activatePrevious)
+                    .keyboardShortcut(.tab, modifiers: [.control, .shift])
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .focusedSceneValue(\.workspaceTabs, tabs)
         .onChange(of: router.workspaceRefreshTick) { _, _ in
             refresh()
+        }
+        .onChange(of: library.folders) { _, _ in
+            tabs.refreshMissing()
         }
     }
 
     private var sidebarToggle: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.22)) {
-                columns = columns == .detailOnly ? .all : .detailOnly
-            }
-        } label: {
+        Button(action: toggleSidebar) {
             Label("Toggle Sidebar", systemImage: "sidebar.left")
         }
         .keyboardShortcut("s", modifiers: [.command, .control])
         .help("Toggle Sidebar (⌃⌘S)")
     }
 
+    private func toggleSidebar() {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            columns = columns == .detailOnly ? .all : .detailOnly
+        }
+    }
+
     private func refresh() {
         library.refresh()
         reloadTick &+= 1
+    }
+
+    private func revealInSidebar(_ url: URL) {
+        tabs.activate(url)
+        if let folder = library.folder(containing: url) {
+            collapsedFolders.remove(folder.url)
+        }
+        withAnimation(.easeInOut(duration: 0.22)) {
+            columns = .all
+        }
+        revealTick &+= 1
     }
 
     private func revealLibrary() {
@@ -69,17 +125,13 @@ struct WorkspaceRoot: View {
     private func handleFileURLChange(from oldURL: URL, to newURL: URL) {
         router.remapReaderFileURL(from: oldURL, to: newURL)
         readState.remap(from: oldURL, to: newURL)
-        if selection?.seshatMatches(oldURL) == true {
-            reloadTick &+= 1
-        }
+        tabs.remap(from: oldURL, to: newURL)
     }
 
     private func handleItemDeleted(_ url: URL) {
         router.closeReaders(for: url)
         readState.forget(url)
-        if selection?.seshatMatches(url) == true {
-            selection = nil
-        }
+        tabs.closeDeleted(url)
     }
 }
 

@@ -5,6 +5,11 @@ import UniformTypeIdentifiers
 struct Sidebar: View {
     let library: Library
     @Binding var selection: URL?
+    @Binding var collapsedFolders: Set<URL>   // ponytail: in-memory; persist if people keep re-collapsing after launch
+    var revealTick: Int = 0                   // bumped to scroll the selected row into view
+    /// New file and import open a permanent tab instead of reusing the preview. (A double-click
+    /// gesture on rows would swallow `List`'s single-click and arrow-key selection.)
+    var onOpenPermanently: (URL) -> Void = { _ in }
     @Environment(ReadState.self) private var readState
     var onRefresh: () -> Void = {}
     var onRevealLibrary: () -> Void = {}
@@ -148,31 +153,42 @@ struct Sidebar: View {
     }
 
     private var libraryList: some View {
-        List(selection: $selection) {
-            ForEach(library.folders) { folder in
-                FolderSection(
-                    folder: folder,
-                    isImportDestination: importDestinationFolderURL?.seshatMatches(folder.url) == true,
-                    onSelectAsDestination: { importDestinationFolderURL = folder.url },
-                    onDrop: { urls in handleDrop(urls, into: folder) },
-                    onNewFileHere: { presentNewFile(into: folder.url) },
-                    onImportHere: { presentImport(into: folder.url) },
-                    onRenameFolder: { presentRename(folder: folder) },
-                    onRevealFolder: { revealInFinder(folder.url) },
-                    onDeleteFolder: { presentDelete(folder: folder) }
-                ) {
-                    ForEach(folder.files) { file in
-                        SidebarFileRow(file: file)
-                            .tag(file.url)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(rowBackground(isSelected: selection?.seshatMatches(file.url) == true))
-                            .draggable(file.url) {
-                                FileDragPreview(name: file.name)
-                            }
-                            .contextMenu {
-                                fileContextMenu(file: file, currentFolder: folder)
-                            }
+        ScrollViewReader { proxy in
+            List(selection: $selection) {
+                ForEach(library.folders) { folder in
+                    FolderSection(
+                        folder: folder,
+                        isImportDestination: importDestinationFolderURL?.seshatMatches(folder.url) == true,
+                        onSelectAsDestination: { importDestinationFolderURL = folder.url },
+                        onDrop: { urls in handleDrop(urls, into: folder) },
+                        onNewFileHere: { presentNewFile(into: folder.url) },
+                        onImportHere: { presentImport(into: folder.url) },
+                        onRenameFolder: { presentRename(folder: folder) },
+                        onRevealFolder: { revealInFinder(folder.url) },
+                        onDeleteFolder: { presentDelete(folder: folder) },
+                        isExpanded: isExpanded(folder)
+                    ) {
+                        ForEach(folder.files) { file in
+                            SidebarFileRow(file: file)
+                                .tag(file.url)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(rowBackground(isSelected: selection?.seshatMatches(file.url) == true))
+                                .draggable(file.url) {
+                                    FileDragPreview(name: file.name)
+                                }
+                                .contextMenu {
+                                    fileContextMenu(file: file, currentFolder: folder)
+                                }
+                        }
+                    }
+                }
+            }
+            .onChange(of: revealTick) { _, _ in
+                guard let selection else { return }
+                Task { @MainActor in   // next run loop turn, so a just-expanded folder has its rows
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo(selection, anchor: .center)
                     }
                 }
             }
@@ -203,6 +219,19 @@ struct Sidebar: View {
                 presentImportFromToolbar()
             }
         }
+    }
+
+    private func isExpanded(_ folder: LibraryFolder) -> Binding<Bool> {
+        Binding(
+            get: { !collapsedFolders.contains(folder.url) },
+            set: { expanded in
+                if expanded {
+                    collapsedFolders.remove(folder.url)
+                } else {
+                    collapsedFolders.insert(folder.url)
+                }
+            }
+        )
     }
 
     /// The system sidebar highlight is the user's accent colour (blue by default) and
@@ -333,7 +362,7 @@ struct Sidebar: View {
         guard let target else { return }
         if let url = library.createFile(named: name, in: target) {
             importDestinationFolderURL = target
-            selection = url
+            onOpenPermanently(url)
         }
     }
 
@@ -449,7 +478,7 @@ struct Sidebar: View {
                 .appendingPathComponent(first.lastPathComponent)
                 .seshatNormalized
             if library.file(at: imported) != nil {
-                selection = imported
+                onOpenPermanently(imported)
             }
         }
     }
@@ -463,8 +492,7 @@ struct Sidebar: View {
             return
         }
         importDestinationFolderURL = folder.url
-        // The owner remaps its state first so re-selecting the new URL finds it already there.
-        onItemMoved(oldURL, newURL)
+        onItemMoved(oldURL, newURL)   // owner remaps first, so the re-select below finds the new URL
         if selection?.seshatMatches(oldURL) == true {
             selection = newURL
         }
@@ -511,7 +539,7 @@ struct Sidebar: View {
                 .appendingPathComponent(first.lastPathComponent)
                 .seshatNormalized
             if library.file(at: imported) != nil {
-                selection = imported
+                onOpenPermanently(imported)
             }
         }
     }

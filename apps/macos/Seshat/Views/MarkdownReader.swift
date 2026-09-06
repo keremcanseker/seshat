@@ -6,6 +6,7 @@ import SwiftUI
 struct MarkdownReader: View {
     let fileURL: URL
     var reloadTick: Int = 0
+    var onRevealInSidebar: (URL) -> Void = { _ in }
 
     @State private var parsed: ParsedMarkdown = .empty
     @State private var rawContent: String = ""
@@ -26,13 +27,52 @@ struct MarkdownReader: View {
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @Environment(AuthStore.self) private var authStore
     @Environment(ReadState.self) private var readState
+    @Environment(WorkspaceTabs.self) private var tabs: WorkspaceTabs?   // nil outside the workspace
+    @Environment(AppRouter.self) private var router
 
     private static let outlineMinWidth: CGFloat = 1080
 
     var body: some View {
+        reader
+        .navigationTitle("")
+        .toolbar {
+            // macOS 26 wraps toolbar items in glass pills; Seshat's chrome stays flat.
+            if #available(macOS 26, *) {
+                if let tabs {
+                    ToolbarItem(placement: .navigation) { tabStrip(tabs) }
+                        .sharedBackgroundVisibility(.hidden)
+                }
+                ToolbarItemGroup(placement: .primaryAction) { actions }
+                    .sharedBackgroundVisibility(.hidden)
+            } else {
+                if let tabs {
+                    ToolbarItem(placement: .navigation) { tabStrip(tabs) }
+                }
+                ToolbarItemGroup(placement: .primaryAction) { actions }
+            }
+        }
+        .focusedSceneValue(\.exportPDF, exportAction)
+        .focusedSceneValue(\.printDocument, printAction)
+        .task(id: ReaderLoadKey(url: fileURL, tick: reloadTick)) {
+            await load()
+        }
+    }
+
+    private func tabStrip(_ tabs: WorkspaceTabs) -> some View {
+        WorkspaceTabStrip(
+            tabs: tabs,
+            availableWidth: available.width,
+            onRevealInSidebar: onRevealInSidebar,
+            onDropFiles: { router.handle(urls: $0) }   // same path as `seshat open`: Inbox copy, permanent tab
+        )
+    }
+
+    private var reader: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
-                if let loadError {
+                if tabs?.isMissing(fileURL) == true {
+                    MissingFileView(url: fileURL)
+                } else if let loadError {
                     ReaderErrorView(error: loadError)
                 } else {
                     ForEach(parsed.sections) { section in
@@ -111,24 +151,6 @@ struct MarkdownReader: View {
         .sheet(item: $premiumPrompt) { prompt in
             PremiumSheet(prompt: prompt)
         }
-        .navigationTitle("")
-        .toolbar {
-            // macOS 26 wraps toolbar items in glass pills; Seshat's chrome stays flat.
-            if #available(macOS 26, *) {
-                ToolbarItem(placement: .navigation) { breadcrumbLabel }
-                    .sharedBackgroundVisibility(.hidden)
-                ToolbarItemGroup(placement: .primaryAction) { actions }
-                    .sharedBackgroundVisibility(.hidden)
-            } else {
-                ToolbarItem(placement: .navigation) { breadcrumbLabel }
-                ToolbarItemGroup(placement: .primaryAction) { actions }
-            }
-        }
-        .focusedSceneValue(\.exportPDF, exportAction)
-        .focusedSceneValue(\.printDocument, printAction)
-        .task(id: ReaderLoadKey(url: fileURL, tick: reloadTick)) {
-            await load()
-        }
         .onChange(of: toast) { _, newValue in
             guard newValue != nil else { return }
             Task {
@@ -171,13 +193,6 @@ struct MarkdownReader: View {
         .help("Export as PDF (⌘⇧E)")
 
         if authStore.isAuthenticated {
-            if let usage = freeUsageLine {
-                Text(usage)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.seshatFaint)
-                    .help("Free accounts include one permanent share link")
-            }
-
             Button(action: { Task { await share() } }) {
                 if isSharing {
                     ProgressView()
@@ -196,12 +211,6 @@ struct MarkdownReader: View {
 
     private var canExport: Bool {
         !isExporting && loadError == nil && !rawContent.isEmpty
-    }
-
-    /// "1 of 1 free links used", only on the free plan. The count comes from the server.
-    private var freeUsageLine: String? {
-        guard let me = authStore.me, me.isFree, let limit = me.usage.limit else { return nil }
-        return "\(me.usage.activeLinks) of \(limit) free links used"
     }
 
     /// nil while nothing can be exported, which disables the File menu item.
@@ -225,21 +234,6 @@ struct MarkdownReader: View {
         showOutline
             && !parsed.outline.isEmpty
             && available.width >= Self.outlineMinWidth
-    }
-
-    private var breadcrumbLabel: some View {
-        Text(breadcrumb)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.seshatMuted)
-            .lineLimit(1)
-            .truncationMode(.middle)
-            .help(fileURL.path)
-    }
-
-    /// "Folder › file.md", like Linear's breadcrumb. The full path lives in the tooltip.
-    private var breadcrumb: String {
-        let folder = fileURL.deletingLastPathComponent().lastPathComponent
-        return folder.isEmpty ? fileURL.lastPathComponent : "\(folder) › \(fileURL.lastPathComponent)"
     }
 
     private var outlineToggleHelp: String {

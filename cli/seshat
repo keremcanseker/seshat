@@ -9,8 +9,8 @@ usage() {
 seshat — native macOS markdown reader
 
 usage:
-  seshat open <file.md>       Open a file in a reader window
-  seshat global [<file.md>]   Open the workspace (reveals file in sidebar if given)
+  seshat open <file.md>       Open a file as a tab in the workspace
+  seshat global [<file.md>]   Open the workspace (opens the file as a tab if given)
   seshat export <file.md> [out.pdf] [--landscape]
                               Save a PDF (default: next to the file, same name)
   seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)

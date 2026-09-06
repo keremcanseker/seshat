@@ -10,11 +10,10 @@ struct FolderSection<Files: View>: View {
     let onRenameFolder: () -> Void
     let onRevealFolder: () -> Void
     let onDeleteFolder: () -> Void
+    @Binding var isExpanded: Bool
     @ViewBuilder let files: () -> Files
 
     @State private var hovering = false
-    // ponytail: in-memory only; persist per folder if people keep re-collapsing after launch.
-    @State private var isExpanded = true
 
     // Not a `Section`: List sections draw their own hairline under the header on macOS
     // and ignore the separator modifiers. A plain header row has nothing to draw.
