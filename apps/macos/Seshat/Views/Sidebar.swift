@@ -164,6 +164,8 @@ struct Sidebar: View {
                     ForEach(folder.files) { file in
                         SidebarFileRow(file: file)
                             .tag(file.url)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+                            .listRowSeparator(.hidden)
                             .listRowBackground(rowBackground(isSelected: selection?.seshatMatches(file.url) == true))
                             .draggable(file.url) {
                                 FileDragPreview(name: file.name)
@@ -175,8 +177,12 @@ struct Sidebar: View {
                 }
             }
         }
-        .listStyle(.sidebar)
+        // .sidebar pins rows to the system source-list height (32pt on macOS 26);
+        // .plain sizes rows from content, which is how we get Linear's 26pt.
+        .listStyle(.plain)
+        .listSectionSeparator(.hidden)
         .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 26)
         .dropDestination(for: URL.self) { urls, _ in
             guard let folderURL = importDestinationFolderURL,
                   let folder = library.folders.first(where: { $0.url.seshatMatches(folderURL) }) else {

@@ -13,10 +13,14 @@ struct FolderSection<Files: View>: View {
     @ViewBuilder let files: () -> Files
 
     @State private var hovering = false
+    // ponytail: in-memory only; persist per folder if people keep re-collapsing after launch.
+    @State private var isExpanded = true
 
     var body: some View {
         Section {
-            files()
+            if isExpanded {
+                files()
+            }
         } header: {
             HStack(spacing: 4) {
                 if isImportDestination {
@@ -27,17 +31,25 @@ struct FolderSection<Files: View>: View {
                 Text(folder.name.uppercased())
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .tracking(1.2)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 7, weight: .semibold))
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .opacity(hovering || !isExpanded ? 1 : 0.5)
             }
             .foregroundStyle(hovering || isImportDestination ? Color.seshatAccent : Color.seshatFaint)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
             .background(
                 RoundedRectangle(cornerRadius: 4)
                     .fill(headerBackground)
             )
+            .contentShape(.rect)
             .animation(.easeOut(duration: 0.12), value: hovering)
             .animation(.easeOut(duration: 0.12), value: isImportDestination)
-            .onTapGesture(count: 1, perform: onSelectAsDestination)
+            .onHover { hovering = $0 }
+            .onTapGesture {
+                withAnimation(.easeOut(duration: 0.15)) { isExpanded.toggle() }
+            }
             .contextMenu {
                 Button("New File…", systemImage: "doc.badge.plus") {
                     onNewFileHere()
@@ -45,6 +57,10 @@ struct FolderSection<Files: View>: View {
                 Button("Import Here…", systemImage: "square.and.arrow.down") {
                     onImportHere()
                 }
+                Button("Use for New Files & Imports", systemImage: "arrow.down.circle") {
+                    onSelectAsDestination()
+                }
+                .disabled(isImportDestination)
                 Divider()
                 Button("Rename Folder…", systemImage: "pencil") {
                     onRenameFolder()

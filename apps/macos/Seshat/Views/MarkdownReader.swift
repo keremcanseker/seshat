@@ -22,6 +22,7 @@ struct MarkdownReader: View {
     @State private var currentMatch: Int = 0
     @FocusState private var searchFocused: Bool
     @State private var showSharedDocs: Bool = false
+    @State private var premiumPrompt: PremiumSheet.Prompt?
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @Environment(AuthStore.self) private var authStore
     @Environment(ReadState.self) private var readState
@@ -107,6 +108,9 @@ struct MarkdownReader: View {
         .sheet(isPresented: $showSharedDocs) {
             SharedDocsView()
         }
+        .sheet(item: $premiumPrompt) { prompt in
+            PremiumSheet(prompt: prompt)
+        }
         .navigationTitle("")
         .toolbar {
             // macOS 26 wraps toolbar items in glass pills; Seshat's chrome stays flat.
@@ -167,6 +171,13 @@ struct MarkdownReader: View {
         .help("Export as PDF (⌘⇧E)")
 
         if authStore.isAuthenticated {
+            if let usage = freeUsageLine {
+                Text(usage)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.seshatFaint)
+                    .help("Free accounts include one permanent share link")
+            }
+
             Button(action: { Task { await share() } }) {
                 if isSharing {
                     ProgressView()
@@ -185,6 +196,12 @@ struct MarkdownReader: View {
 
     private var canExport: Bool {
         !isExporting && loadError == nil && !rawContent.isEmpty
+    }
+
+    /// "1 of 1 free links used", only on the free plan. The count comes from the server.
+    private var freeUsageLine: String? {
+        guard let me = authStore.me, me.isFree, let limit = me.usage.limit else { return nil }
+        return "\(me.usage.activeLinks) of \(limit) free links used"
     }
 
     /// nil while nothing can be exported, which disables the File menu item.
@@ -295,8 +312,12 @@ struct MarkdownReader: View {
                 message: "\(wasUpdate ? "Link updated" : "Link copied") · \(response.url)",
                 openURL: URL(string: response.url)
             ))
+            await authStore.refreshMe()
         } catch APIError.unauthorized {
             present(toast: .init(kind: .failure, message: "Session expired. Please sign in again."))
+        } catch APIError.paymentRequired(let code, let upgradeURL, _) {
+            premiumPrompt = .init(code: code, upgradeURL: upgradeURL)
+            await authStore.refreshMe()
         } catch {
             present(toast: .init(kind: .failure, message: error.localizedDescription))
         }

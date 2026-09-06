@@ -13,16 +13,27 @@ final class AuthStore {
 
     private(set) var status: Status = .unknown
     private(set) var currentUser: User?
+    /// Plan and usage from GET /me. Served from a 30-day UserDefaults cache while offline.
+    private(set) var me: Me?
     private(set) var lastError: String?
     let api: APIClient
 
     private(set) var token: String?
+
+    private struct CachedMe: Codable {
+        let me: Me
+        let fetchedAt: Date
+    }
+
+    private static let meCacheKey = "SeshatMe"
+    private static let meCacheMaxAge: TimeInterval = 30 * 24 * 60 * 60
 
     init(api: APIClient = APIClient()) {
         self.api = api
         self.token = TokenStore.loadToken()
         self.api.authStore = self
         self.status = token == nil ? .signedOut : .unknown
+        self.me = token == nil ? nil : Self.loadCachedMe()
     }
 
     var isAuthenticated: Bool {
@@ -65,6 +76,7 @@ final class AuthStore {
         TokenStore.deleteToken()
         token = nil
         currentUser = nil
+        clearMe()
         status = .signedOut
         lastError = nil
     }
@@ -74,6 +86,7 @@ final class AuthStore {
         TokenStore.deleteToken()
         token = nil
         currentUser = nil
+        clearMe()
         status = .signedOut
     }
 
@@ -84,6 +97,7 @@ final class AuthStore {
             currentUser = user
             status = .signedIn
             lastError = nil
+            await refreshMe()
         } catch APIError.unauthorized {
             return
         } catch {
@@ -91,5 +105,32 @@ final class AuthStore {
             lastError = error.localizedDescription
             if currentUser == nil { status = .signedOut }
         }
+    }
+
+    /// Re-reads plan and usage. Failures keep the cached value; the server is the
+    /// only authority, so a stale counter is better than a guessed one.
+    func refreshMe() async {
+        guard token != nil else { return }
+        do {
+            let fresh = try await api.fetchMe()
+            me = fresh
+            let cached = CachedMe(me: fresh, fetchedAt: .now)
+            UserDefaults.standard.set(try? JSONEncoder().encode(cached), forKey: Self.meCacheKey)
+        } catch {
+            seshatLog("AuthStore.refreshMe failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func clearMe() {
+        me = nil
+        UserDefaults.standard.removeObject(forKey: Self.meCacheKey)
+    }
+
+    private static func loadCachedMe() -> Me? {
+        guard let data = UserDefaults.standard.data(forKey: meCacheKey),
+              let cached = try? JSONDecoder().decode(CachedMe.self, from: data),
+              Date.now.timeIntervalSince(cached.fetchedAt) < meCacheMaxAge
+        else { return nil }
+        return cached.me
     }
 }

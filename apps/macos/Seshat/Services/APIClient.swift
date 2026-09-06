@@ -3,6 +3,8 @@ import Foundation
 enum APIError: LocalizedError {
     case invalidResponse
     case unauthorized
+    /// 402 from the server: `code` is quota_exceeded, read_only_over_quota or feature_required.
+    case paymentRequired(code: String, upgradeURL: URL?, message: String)
     case server(status: Int, message: String)
     case transport(Error)
 
@@ -12,7 +14,7 @@ enum APIError: LocalizedError {
             return "The server returned an unexpected response."
         case .unauthorized:
             return "Your session has expired. Please sign in again."
-        case .server(_, let message):
+        case .paymentRequired(_, _, let message), .server(_, let message):
             return message
         case .transport(let error):
             return error.localizedDescription
@@ -53,6 +55,10 @@ final class APIClient {
         try await send(path: path, method: "DELETE", body: Optional<EmptyBody>.none, requiresAuth: requiresAuth)
     }
 
+    func fetchMe() async throws -> Me {
+        try await get("me")
+    }
+
     private func send<Body: Encodable, Response: Decodable>(
         path: String,
         method: String,
@@ -90,10 +96,20 @@ final class APIClient {
             throw APIError.unauthorized
         }
 
+        let errorBody = Self.errorBody(from: data)
+
+        if http.statusCode == 402, let code = errorBody?.code {
+            throw APIError.paymentRequired(
+                code: code,
+                upgradeURL: errorBody?.upgradeUrl.flatMap(URL.init(string:)),
+                message: errorBody?.error ?? "This needs Seshat Premium."
+            )
+        }
+
         guard (200..<300).contains(http.statusCode) else {
             throw APIError.server(
                 status: http.statusCode,
-                message: Self.errorMessage(from: data) ?? "Request failed (\(http.statusCode))"
+                message: errorBody?.error ?? "Request failed (\(http.statusCode))"
             )
         }
 
@@ -120,9 +136,15 @@ final class APIClient {
         return decoder
     }()
 
-    private static func errorMessage(from data: Data) -> String? {
-        struct ErrorBody: Decodable { let message: String? }
-        return (try? JSONDecoder().decode(ErrorBody.self, from: data))?.message
+    /// Server errors are `{ error }`; 402s add `code` and `upgradeUrl`.
+    private struct ErrorBody: Decodable {
+        let error: String?
+        let code: String?
+        let upgradeUrl: String?
+    }
+
+    private static func errorBody(from data: Data) -> ErrorBody? {
+        try? JSONDecoder().decode(ErrorBody.self, from: data)
     }
 }
 
