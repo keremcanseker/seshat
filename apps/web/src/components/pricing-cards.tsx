@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { checkoutAction } from "@/app/pricing/actions";
+import { AppleGlyph } from "@/components/landing/hero-desktop";
+import { SeshatStar } from "@/components/seshat-star";
 import { formatMoney, type DisplayFeature, type Interval, type Plans } from "@/lib/plans";
 
 type Props = {
@@ -12,133 +14,126 @@ type Props = {
   downloadHref: string;
 };
 
+/** Free (paper) and Premium (ink) with a yearly / monthly tab inside Premium. */
 export function PricingCards({ plans, signedIn, downloadHref }: Props) {
   const [interval, setInterval] = useState<Interval>("yearly");
   const [starting, startCheckout] = useTransition();
-  const price = plans.pricing[interval];
-  const currency = price.currency;
-  const perMonth = interval === "yearly" ? price.amount / 12 : price.amount;
-  const perYear = interval === "yearly" ? price.amount : price.amount * 12;
+  const monthly = plans.pricing.monthly;
+  const yearly = plans.pricing.yearly;
+  const cur = yearly.currency;
+  const yearAtMonthly = monthly.amount * 12;
+  const savePct = Math.round((1 - yearly.amount / yearAtMonthly) * 100);
   const freeLimit = plans.plans.free.quotas.activeLinks;
+  const isYearly = interval === "yearly";
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      <Card title="Free" eyebrow="For reading">
-        <p className="font-heading text-ink m-0 text-[32px] leading-none font-bold tracking-[-0.01em]">
-          0 {currency}
+    <div className="pricing-grid">
+      <section className="pricing-card">
+        <span className="pricing-eyebrow">For reading</span>
+        <h3 className="pricing-title">Free</h3>
+        <p className="pricing-sub">
+          The whole reader, no account.
+          {freeLimit === null ? "" : ` ${freeLimit} share link included.`}
         </p>
-        <p className="text-ink-muted m-0 mt-2 text-[13px]">
-          {freeLimit === null ? "Unlimited share links" : `${freeLimit} share link, no expiry`}
-        </p>
-        <FeatureList items={plans.display.free} />
-        <a
-          href={downloadHref}
-          className="border-rule-strong text-ink hover:bg-paper-subtle mt-auto inline-flex h-10 items-center justify-center rounded-md border-[0.5px] px-5 text-[14px] font-medium no-underline transition-colors"
-        >
+        <div className="pricing-price">
+          <span className="pricing-amount">
+            0 {cur}
+            <span className="pricing-period">forever</span>
+          </span>
+        </div>
+        <hr className="pricing-rule" />
+        <Features items={plans.display.free} />
+        <p className="pricing-note">Upgrade whenever a second link is needed.</p>
+        <a href={downloadHref} className="btn-ink pricing-btn mt-auto">
+          <AppleGlyph />
           Download for macOS
         </a>
-      </Card>
+        <p className="pricing-fine">macOS 14 or later</p>
+      </section>
 
-      <Card title="Premium" eyebrow="For sharing" featured>
-        <div
-          role="radiogroup"
-          aria-label="Billing interval"
-          className="bg-paper-subtle mb-5 inline-flex self-start rounded-md p-0.5"
-        >
-          {(["yearly", "monthly"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={interval === value}
-              onClick={() => setInterval(value)}
-              className={`h-7 rounded-[5px] px-3 text-[12px] font-medium transition-colors ${
-                interval === value
-                  ? "bg-paper text-ink shadow-[0_1px_2px_rgba(30,20,10,0.12)]"
-                  : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              {value === "yearly" ? "Yearly" : "Monthly"}
-            </button>
-          ))}
-        </div>
-        <p className="font-heading text-ink m-0 text-[32px] leading-none font-bold tracking-[-0.01em] tabular-nums">
-          {formatMoney(price.amount, currency)}
-          <span className="text-ink-muted font-sans text-[14px] font-normal">
-            {" "}
-            / {interval === "yearly" ? "year" : "month"}
+      <section className="pricing-card is-featured">
+        <div className="flex items-center justify-between gap-3">
+          <span className="pricing-eyebrow">
+            <SeshatStar size={9} />
+            For sharing
           </span>
-        </p>
-        <p className="text-ink-muted m-0 mt-2 text-[13px] tabular-nums">
-          {interval === "yearly"
-            ? `${formatMoney(perMonth, currency)} per month`
-            : `${formatMoney(perYear, currency)} per year`}
-        </p>
-        <FeatureList items={plans.display.premium} />
-        {signedIn ? (
-          <button
-            type="button"
-            disabled={starting}
-            onClick={() => startCheckout(() => checkoutAction(interval))}
-            className="btn-ink mt-auto inline-flex h-10 items-center justify-center rounded-md px-5 text-[14px] font-medium disabled:opacity-60"
+          <div
+            role="radiogroup"
+            aria-label="Billing interval"
+            className="pricing-tabs"
+            data-on={interval}
           >
-            {starting ? "Opening checkout..." : "Get Premium"}
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className="btn-ink mt-auto inline-flex h-10 items-center justify-center rounded-md px-5 text-[14px] font-medium no-underline"
-          >
-            Sign in to get Premium
-          </Link>
-        )}
-      </Card>
+            <span className="pricing-tabs-pill" aria-hidden />
+            {(["yearly", "monthly"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={interval === v}
+                onClick={() => setInterval(v)}
+                className={interval === v ? "is-on" : ""}
+              >
+                {v === "yearly" ? "Yearly" : "Monthly"}
+                {v === "yearly" ? <em>-{savePct}%</em> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+        <h3 className="pricing-title">Premium</h3>
+        <p className="pricing-sub">
+          {isYearly ? "Two months free. Everything below, unlimited." : "Everything below, paid month to month."}
+        </p>
+        <div className="pricing-price pricing-swap" key={interval}>
+          <span className="pricing-was" style={isYearly ? undefined : { visibility: "hidden" }}>
+            <s>{formatMoney(yearAtMonthly, cur)}</s>
+            <span className="pricing-badge">Save {savePct}%</span>
+          </span>
+          <span className="pricing-amount">
+            {formatMoney(isYearly ? yearly.amount : monthly.amount, cur)}
+            <span className="pricing-period">{isYearly ? "/ year" : "/ month"}</span>
+          </span>
+        </div>
+        <p className="pricing-permonth">
+          {isYearly
+            ? `That is ${formatMoney(yearly.amount / 12, cur)} a month, billed once a year.`
+            : `${formatMoney(yearAtMonthly, cur)} a year. Yearly is ${formatMoney(yearly.amount, cur)}.`}
+        </p>
+        <hr className="pricing-rule" />
+        <Features items={plans.display.premium} />
+        <p className="pricing-note">Cancel anytime. Your links stay online.</p>
+        <div className="mt-auto">
+          {signedIn ? (
+            <button
+              type="button"
+              disabled={starting}
+              onClick={() => startCheckout(() => checkoutAction(interval))}
+              className="btn-paper pricing-btn disabled:opacity-60"
+            >
+              {starting ? "Opening checkout…" : isYearly ? "Get Premium yearly" : "Get Premium monthly"}
+            </button>
+          ) : (
+            <Link href="/login" className="btn-paper pricing-btn">
+              {isYearly ? "Get Premium yearly" : "Get Premium monthly"}
+            </Link>
+          )}
+        </div>
+        <p className="pricing-fine">
+          {isYearly ? "One payment a year. Handled by Polar." : "Billed monthly. Handled by Polar."}
+        </p>
+      </section>
     </div>
   );
 }
 
-function Card({
-  title,
-  eyebrow,
-  featured = false,
-  children,
-}: {
-  title: string;
-  eyebrow: string;
-  featured?: boolean;
-  children: React.ReactNode;
-}) {
+function Features({ items }: { items: DisplayFeature[] }) {
   return (
-    <section
-      className={`flex flex-col rounded-xl border-[0.5px] p-7 ${
-        featured ? "border-gold-soft bg-paper-subtle" : "border-rule bg-paper"
-      }`}
-    >
-      <p className="text-ink-faint m-0 mb-1 font-mono text-[11px] tracking-[0.1em] uppercase">
-        {eyebrow}
-      </p>
-      <h2 className="font-heading text-ink m-0 mb-5 text-[20px] font-semibold">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function FeatureList({ items }: { items: DisplayFeature[] }) {
-  return (
-    <ul className="m-0 my-7 list-none p-0">
+    <ul className="pricing-features">
       {items.map((f) => (
-        <li key={f.key} className="text-ink flex items-start gap-2.5 py-1.5 text-[14px] leading-[1.5]">
-          <Check
-            className={`mt-1 size-3.5 shrink-0 ${f.available ? "text-gold" : "text-ink-faint"}`}
-            strokeWidth={2}
-          />
-          <span className={f.available ? "" : "text-ink-muted"}>
+        <li key={f.key} className={f.available ? "" : "is-soon"}>
+          <Check className="pricing-check" strokeWidth={2.2} />
+          <span>
             {f.label}
-            {f.available ? null : (
-              <span className="text-ink-faint ml-2 font-mono text-[10px] tracking-[0.08em] uppercase">
-                soon
-              </span>
-            )}
+            {f.available ? null : <em>soon</em>}
           </span>
         </li>
       ))}

@@ -1022,6 +1022,408 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
       0 1px 2px rgba(30, 20, 10, 0.22);
   }
 
+  /* The inverse of .btn-ink: paper on an ink card. */
+  .btn-paper {
+    background: linear-gradient(180deg, #fffdfa 0%, #f1ece4 100%);
+    color: #2a2522;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(30, 20, 10, 0.18),
+      0 1px 2px rgba(0, 0, 0, 0.25),
+      0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  }
+
+  .btn-paper:hover {
+    background: #fffdfa;
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(30, 20, 10, 0.18),
+      0 2px 4px rgba(0, 0, 0, 0.25),
+      0 8px 18px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-paper:active {
+    background: #e9e3da;
+    transform: none;
+    box-shadow: inset 0 2px 4px rgba(30, 20, 10, 0.2);
+  }
+
+  /* Gold: the one upsell button. Same machined finish as .btn-ink, warm
+     enough to read on dark paper where ink-on-ink disappears. */
+  .btn-gold {
+    background: linear-gradient(180deg, #d9a35a 0%, #c28c45 100%);
+    color: #1f1815;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+      0 1px 2px rgba(30, 20, 10, 0.2),
+      0 4px 10px rgba(194, 140, 69, 0.28);
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  }
+
+  .btn-gold:hover {
+    background: linear-gradient(180deg, #e2ad63 0%, #cb954c 100%);
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 2px 4px rgba(30, 20, 10, 0.2),
+      0 8px 18px rgba(194, 140, 69, 0.34);
+  }
+
+  .btn-gold:active {
+    background: #b5813e;
+    transform: none;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ── Pricing cards (/pricing and the landing section) ── */
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: stretch;
+    max-width: 880px;
+    margin-inline: auto;
+  }
+
+  .pricing-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 26px 22px;
+    border-radius: 20px;
+    background: var(--paper);
+    border: 0.5px solid var(--rule-strong);
+    box-shadow:
+      0 1px 2px rgba(30, 20, 10, 0.05),
+      0 12px 32px rgba(30, 20, 10, 0.06);
+  }
+
+  /* Yearly: an ink card, always dark, gold accents, slightly taller than its
+     neighbours so it reads as the one to pick. Tokens are pinned so the card
+     looks the same under the site's dark theme. */
+  .pricing-card.is-featured {
+    --paper: #fcfaf7;
+    --paper-subtle: #f6f2ec;
+    --ink: #2a2522;
+    --ink-muted: #6b5f50;
+    --ink-faint: #9a8f80;
+    --rule: #ece6dd;
+    --rule-strong: #d9d0c2;
+    color: var(--paper);
+    background: linear-gradient(180deg, #342d29 0%, #231e1b 100%);
+    border-color: rgba(0, 0, 0, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 2px 4px rgba(30, 20, 10, 0.18),
+      0 24px 48px rgba(30, 20, 10, 0.28);
+  }
+
+  /* Yearly / monthly tabs in the Premium card header. The pill slides. */
+  .pricing-tabs {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 3px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  .pricing-tabs-pill {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    border-radius: 9999px;
+    background: var(--paper);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 260ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .pricing-tabs[data-on="monthly"] .pricing-tabs-pill {
+    transform: translateX(100%);
+  }
+
+  .pricing-tabs button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 11px;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: color-mix(in oklab, var(--paper) 60%, transparent);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease;
+  }
+
+  .pricing-tabs button:hover {
+    color: var(--paper);
+  }
+
+  .pricing-tabs button.is-on {
+    color: var(--ink);
+  }
+
+  .pricing-swap {
+    animation: pricing-swap 260ms ease both;
+  }
+
+  @keyframes pricing-swap {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .pricing-tabs em {
+    font-style: normal;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .pricing-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--ink-muted);
+    background: var(--paper-subtle);
+    border: 0.5px solid var(--rule);
+  }
+
+  .is-featured .pricing-eyebrow {
+    color: var(--gold);
+    background: color-mix(in oklab, var(--gold) 16%, transparent);
+    border-color: color-mix(in oklab, var(--gold) 40%, transparent);
+  }
+
+  .pricing-title {
+    margin: 16px 0 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+  }
+
+  .is-featured .pricing-title {
+    color: var(--paper);
+  }
+
+  .pricing-sub {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+  }
+
+  .is-featured .pricing-sub,
+  .is-featured .pricing-permonth,
+  .is-featured .pricing-note,
+  .is-featured .pricing-fine {
+    color: color-mix(in oklab, var(--paper) 62%, transparent);
+  }
+
+  .pricing-price {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 22px;
+  }
+
+  .pricing-was {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: color-mix(in oklab, var(--paper) 50%, transparent);
+  }
+
+  .pricing-was s {
+    text-decoration-thickness: 1px;
+  }
+
+  .pricing-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #2a2522;
+    background: var(--gold);
+  }
+
+  .pricing-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .is-featured .pricing-amount {
+    color: var(--paper);
+  }
+
+  .pricing-period {
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--ink-muted);
+  }
+
+  .is-featured .pricing-period {
+    color: color-mix(in oklab, var(--paper) 60%, transparent);
+  }
+
+  .pricing-permonth {
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  .pricing-rule {
+    margin: 22px 0 18px;
+    border: 0;
+    height: 0.5px;
+    background: var(--rule-strong);
+  }
+
+  .is-featured .pricing-rule {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .pricing-features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .pricing-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+
+  .is-featured .pricing-features li {
+    color: var(--paper);
+  }
+
+  .pricing-check {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    color: var(--gold);
+  }
+
+  .pricing-features li.is-soon,
+  .is-featured .pricing-features li.is-soon {
+    color: var(--ink-muted);
+  }
+
+  .is-featured .pricing-features li.is-soon {
+    color: color-mix(in oklab, var(--paper) 62%, transparent);
+  }
+
+  .pricing-features li.is-soon .pricing-check {
+    color: var(--ink-faint);
+  }
+
+  .is-featured .pricing-features li.is-soon .pricing-check {
+    color: color-mix(in oklab, var(--paper) 35%, transparent);
+  }
+
+  .pricing-features em {
+    margin-left: 7px;
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    vertical-align: 1px;
+  }
+
+  .pricing-note {
+    margin: 18px 0 20px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+  }
+
+  .pricing-btn {
+    display: inline-flex;
+    width: 100%;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 9999px;
+    border: 0;
+    padding: 0 18px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .pricing-fine {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  @media (max-width: 760px) {
+    .pricing-grid {
+      grid-template-columns: 1fr;
+      max-width: 440px;
+    }
+    .pricing-card.is-featured {
+      order: -1;
+    }
+  }
+
   .hero-stage {
     position: relative;
     width: 100%;

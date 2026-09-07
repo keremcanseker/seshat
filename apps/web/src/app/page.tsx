@@ -1,7 +1,10 @@
 import { BookOpen, Library, Link2, ListTree, SunMoon, Terminal } from "lucide-react";
-import { DownloadButton } from "@/components/download-button";
+import { Closure } from "@/components/landing/closure";
 import { Faq, type FaqItem } from "@/components/landing/faq";
-import { AppleGlyph, HeroDesktop, type LibraryGroup } from "@/components/landing/hero-desktop";
+import { HeroDesktop, type LibraryGroup } from "@/components/landing/hero-desktop";
+import { PricingCards } from "@/components/pricing-cards";
+import { getCurrentUser } from "@/lib/auth";
+import { fetchPlans } from "@/lib/plans";
 import { SeshatDoc } from "@/components/seshat-doc";
 import { extractOutline } from "@/lib/extract-outline";
 
@@ -11,7 +14,12 @@ const API_BASE =
   process.env.NEXT_PUBLIC_SESHAT_API ?? "https://api.seshat.page";
 const DOWNLOAD_URL = `${API_BASE}/download`;
 
-export default function Home() {
+export default async function Home() {
+  // The landing must render even when the API is down, so pricing is optional.
+  const [plans, user] = await Promise.all([
+    fetchPlans().catch(() => null),
+    getCurrentUser().catch(() => null),
+  ]);
   return (
     <main className="landing text-ink">
       <HeroDesktop downloadHref={DOWNLOAD_URL} library={LIBRARY} initialId="Inbox/start-here" />
@@ -19,9 +27,29 @@ export default function Home() {
         <About />
         <LibraryCard />
         <SharePromo />
+        {plans ? (
+          <section id="pricing" className="mx-auto mt-[100px] max-w-[1040px]">
+            <h2 className="font-heading text-ink mx-auto mb-3 max-w-[30ch] text-balance text-center text-[clamp(26px,3vw,34px)] leading-[1.2] font-medium tracking-[-0.015em]">
+              Read for free. Share for less than a coffee a month.
+            </h2>
+            <p className="text-ink-muted mx-auto mb-12 max-w-[48ch] text-center text-[15px] leading-[1.55]">
+              One share link is included with every account. Premium is for the second link and every one after it.
+            </p>
+            <PricingCards plans={plans} signedIn={user !== null} downloadHref={DOWNLOAD_URL} />
+            <p className="text-ink-faint mt-8 text-center text-[13px]">
+              <a href="/pricing" className="text-ink-muted hover:text-ink transition-colors">
+                Questions about the price →
+              </a>
+            </p>
+          </section>
+        ) : null}
         <Questions />
       </div>
-      <Closure />
+      <Closure
+        downloadHref={DOWNLOAD_URL}
+        title="Read the markdown you already have."
+        lede="Free for macOS. Open the report an agent just wrote, keep what is worth keeping, and send it on as a link."
+      />
     </main>
   );
 }
@@ -654,60 +682,5 @@ function Questions() {
       <h2 className="faq-title">Questions before you download.</h2>
       <Faq items={FAQ} />
     </section>
-  );
-}
-
-/* ── Closing call + footer ─────────────────────────────────────────── */
-
-function Closure() {
-  return (
-    <div className="closure">
-      <section className="close" aria-labelledby="close-h">
-        <h2 id="close-h" className="close-line">
-          Read the markdown you already have.
-        </h2>
-        <p className="close-lede">
-          Free for macOS. Open the report an agent just wrote, keep what is
-          worth keeping, and send it on as a link.
-        </p>
-        <DownloadButton
-          href={DOWNLOAD_URL}
-          className="close-cta btn-ink inline-flex h-10 items-center gap-2 rounded-full px-5 text-[14px] font-medium no-underline"
-        >
-          <AppleGlyph />
-          Download for macOS
-        </DownloadButton>
-        <p className="close-fine">No account to read. macOS 14 or later.</p>
-      </section>
-
-      <footer className="foot">
-        <div className="foot-in">
-          <div className="foot-id">
-            <a className="foot-brand" href="/" aria-label="Seshat home">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/apple-icon.png" alt="" width={44} height={44} draggable={false} />
-            </a>
-            <p className="foot-name">Seshat</p>
-            <p className="foot-by">
-              Made by <a href="https://github.com/keremcanseker">Kerem</a> · © 2026
-            </p>
-          </div>
-          <div className="foot-cols">
-            <div className="foot-col">
-              <p className="foot-h">Seshat</p>
-              <a href="#about">What it is</a>
-              <a href="#faq">Questions</a>
-              <a href={DOWNLOAD_URL}>Download for macOS</a>
-            </div>
-            <div className="foot-col">
-              <p className="foot-h">Share</p>
-              <a href="/pricing">Pricing</a>
-              <a href="/login">Sign in</a>
-              <a href="/dashboard">Your pages</a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
   );
 }

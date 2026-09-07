@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DocList } from "@/components/doc-list";
 import { SeshatMark } from "@/components/seshat-mark";
+import { SeshatStar } from "@/components/seshat-star";
 import { CheckoutWatcher } from "@/components/checkout-watcher";
 import { getCurrentUser, getMe, getMyDocs } from "@/lib/auth";
 import type { Me } from "@/lib/plans";
@@ -119,9 +120,10 @@ function PlanRow({ me }: { me: Me }) {
       ) : (
         <Link
           href="/pricing"
-          className="btn-ink inline-flex h-8 items-center rounded-md px-3.5 text-[12px] font-medium no-underline"
+          className="btn-gold inline-flex h-10 items-center gap-2 rounded-full px-5 text-[14px] font-semibold no-underline"
         >
-          Upgrade
+          <SeshatStar size={11} />
+          Upgrade to Premium
         </Link>
       )}
     </div>
