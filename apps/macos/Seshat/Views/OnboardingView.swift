@@ -3,6 +3,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @AppStorage("SeshatOnboardingCompletedV1") private var completed = false
+    @Environment(AuthStore.self) private var authStore
 
     var body: some View {
         ZStack {
@@ -11,9 +12,12 @@ struct OnboardingView: View {
                 VStack(spacing: 36) {
                     header
                     sections
-                    Button("Get started") { completed = true }
-                        .buttonStyle(OnboardingPrimaryButton())
-                        .padding(.top, 8)
+                    // Signing in is one step among the others, never the door.
+                    Button(authStore.isAuthenticated ? "Get started" : "Continue without an account") {
+                        completed = true
+                    }
+                    .buttonStyle(OnboardingPrimaryButton())
+                    .padding(.top, 8)
                 }
                 .padding(.horizontal, 56)
                 .padding(.vertical, 56)
@@ -58,6 +62,8 @@ struct OnboardingView: View {
                 actionLabel: nil,
                 action: nil
             )
+
+            OnboardingSignInSection()
         }
     }
 }
@@ -106,7 +112,7 @@ private struct OnboardingPrimaryButton: ButtonStyle {
     }
 }
 
-private struct OnboardingSecondaryButton: ButtonStyle {
+struct OnboardingSecondaryButton: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 12.5, weight: .medium))
@@ -129,5 +135,6 @@ private struct OnboardingSecondaryButton: ButtonStyle {
 
 #Preview {
     OnboardingView()
+        .environment(AuthStore())
         .frame(width: 720, height: 760)
 }

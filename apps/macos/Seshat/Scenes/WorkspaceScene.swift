@@ -4,7 +4,7 @@ struct WorkspaceScene: Scene {
     static let id = "workspace"
 
     @State private var library = Library()
-    @State private var tabs = WorkspaceTabs()   // above the auth gate, so sign-out keeps the tabs
+    @State private var tabs = WorkspaceTabs()   // owned by the scene, so onboarding and sign-out keep the tabs
 
     var body: some Scene {
         Window("Seshat", id: Self.id) {
@@ -27,15 +27,19 @@ private struct WorkspaceRootContainer: View {
     @Environment(UpdaterController.self) private var updaterController
     @Environment(\.openWindow) private var openWindow
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
+    @AppStorage("SeshatOnboardingCompletedV1") private var onboardingCompleted = false
     @State private var closeTabMonitor: Any?
     @State private var window: NSWindow?
 
     var body: some View {
         Group {
-            if authStore.isAuthenticated {
+            // Reading never needs an account: the only thing between a fresh
+            // install and the library is the one-time onboarding, which can be
+            // skipped. Sign-in lives in the Share flow (KER-801).
+            if onboardingCompleted {
                 WorkspaceRoot(library: library, tabs: tabs)
             } else {
-                SignInView()
+                OnboardingView()
             }
         }
         .overlay(alignment: .bottomTrailing) {
@@ -78,17 +82,16 @@ private struct WorkspaceRootContainer: View {
     /// ⌘W closes the active tab. SwiftUI offers no placement for the system Close item, so the
     /// key is taken here before menu dispatch; with no tab open it falls through and closes
     /// the window as before. Only while the workspace itself is key and showing tabs: another
-    /// window (Sparkle, a reader), a sheet, or the sign-in screen leaves the tab alone.
+    /// window (Sparkle, a reader), a sheet, or the onboarding screen leaves the tab alone.
     private func installCloseTabShortcut() {
         guard closeTabMonitor == nil else { return }
         let tabs = tabs
-        let authStore = authStore
         closeTabMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
                   event.charactersIgnoringModifiers == "w" else { return event }
             let handled = MainActor.assumeIsolated {
                 guard let window, NSApp.keyWindow === window, window.attachedSheet == nil,
-                      authStore.isAuthenticated, let active = tabs.active else { return false }
+                      onboardingCompleted, let active = tabs.active else { return false }
                 tabs.close(active)
                 return true
             }

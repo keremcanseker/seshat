@@ -16,7 +16,6 @@ private struct ReaderRoot: View {
 
     @Environment(\.openWindow) private var openWindow
     @Environment(AppRouter.self) private var router
-    @Environment(AuthStore.self) private var authStore
     @Environment(UpdateChecker.self) private var updateChecker
     @Environment(UpdaterController.self) private var updaterController
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
@@ -26,8 +25,6 @@ private struct ReaderRoot: View {
         Group {
             if let fileURL {
                 MarkdownReader(fileURL: fileURL)
-            } else if !authStore.isAuthenticated {
-                SignInView()
             } else if !onboardingCompleted {
                 OnboardingView()
             } else {

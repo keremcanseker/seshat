@@ -1,64 +1,64 @@
 import SwiftUI
 
+/// Sheet shown when a signed-out reader taps Share. Publishing needs an
+/// identity; reading never does, so this is the only place the app asks.
+/// Dismisses itself once the browser round-trip signs the user in.
 struct SignInView: View {
     @Environment(AuthStore.self) private var authStore
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack {
-            Color.seshatPaper.ignoresSafeArea()
-            VStack(spacing: 28) {
-                SeshatMark(lineWidth: 1.5, color: .seshatAccent)
-                    .frame(width: 64, height: 64)
-                VStack(spacing: 8) {
-                    Text("Welcome to Seshat")
-                        .font(.system(size: 26, weight: .semibold, design: .serif))
-                        .foregroundStyle(Color.seshatHeading)
-                    Text("Sign in to share your markdown to the web.")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.seshatMuted)
-                        .multilineTextAlignment(.center)
-                }
-                Button(action: authStore.signIn) {
-                    HStack(spacing: 10) {
-                        if authStore.status == .signingIn {
-                            ProgressView()
-                                .controlSize(.small)
-                                .progressViewStyle(.circular)
-                        } else {
-                            Image(systemName: "globe")
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        Text(authStore.status == .signingIn ? "Waiting for browser…" : "Sign in with Google")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 12)
-                    .frame(minWidth: 240)
-                }
-                .buttonStyle(SignInButtonStyle())
-                .disabled(authStore.status == .signingIn)
-
-                if let error = authStore.lastError {
-                    Text(error)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.red.opacity(0.85))
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 320)
-                }
-
-                VStack(spacing: 4) {
-                    Text("Reading is always free.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.seshatFaint)
-                    Text("Sharing publishes a public link at seshat.page.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.seshatFaint)
-                }
-                .multilineTextAlignment(.center)
-                .padding(.top, 4)
+        VStack(spacing: 24) {
+            SeshatMark(lineWidth: 1.5, color: .seshatAccent)
+                .frame(width: 48, height: 48)
+            VStack(spacing: 8) {
+                Text("Sign in to share")
+                    .font(.system(size: 22, weight: .semibold, design: .serif))
+                    .foregroundStyle(Color.seshatHeading)
+                Text("Publishing a link at seshat.page needs an account. One permanent link is free.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.seshatMuted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(40)
-            .frame(maxWidth: 420)
+            Button(action: authStore.signIn) {
+                HStack(spacing: 10) {
+                    if authStore.status == .signingIn {
+                        ProgressView()
+                            .controlSize(.small)
+                            .progressViewStyle(.circular)
+                    } else {
+                        Image(systemName: "globe")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    Text(authStore.status == .signingIn ? "Waiting for browser…" : "Sign in with Google")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .padding(.horizontal, 22)
+                .padding(.vertical, 12)
+                .frame(minWidth: 240)
+            }
+            .buttonStyle(SignInButtonStyle())
+            .disabled(authStore.status == .signingIn)
+
+            if let error = authStore.lastError {
+                Text(error)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.red.opacity(0.85))
+                    .multilineTextAlignment(.center)
+            }
+
+            Button("Not now") { dismiss() }
+                .buttonStyle(.borderless)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.seshatFaint)
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(36)
+        .frame(width: 420)
+        .background(Color.seshatPaper)
+        .onChange(of: authStore.isAuthenticated) { _, signedIn in
+            if signedIn { dismiss() }
         }
     }
 }

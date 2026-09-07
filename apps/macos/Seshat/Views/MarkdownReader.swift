@@ -24,6 +24,7 @@ struct MarkdownReader: View {
     @FocusState private var searchFocused: Bool
     @State private var showSharedDocs: Bool = false
     @State private var premiumPrompt: PremiumSheet.Prompt?
+    @State private var showSignIn: Bool = false
     @AppStorage("seshatAppearance") private var appearance: AppearanceMode = .light
     @Environment(AuthStore.self) private var authStore
     @Environment(ReadState.self) private var readState
@@ -151,6 +152,9 @@ struct MarkdownReader: View {
         .sheet(item: $premiumPrompt) { prompt in
             PremiumSheet(prompt: prompt)
         }
+        .sheet(isPresented: $showSignIn, onDismiss: shareAfterSignIn) {
+            SignInView()
+        }
         .onChange(of: toast) { _, newValue in
             guard newValue != nil else { return }
             Task {
@@ -192,20 +196,31 @@ struct MarkdownReader: View {
         .disabled(!canExport)
         .help("Export as PDF (⌘⇧E)")
 
-        if authStore.isAuthenticated {
-            Button(action: { Task { await share() } }) {
-                if isSharing {
-                    ProgressView()
-                        .controlSize(.small)
-                        .progressViewStyle(.circular)
-                } else {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
+        Button(action: shareTapped) {
+            if isSharing {
+                ProgressView()
+                    .controlSize(.small)
+                    .progressViewStyle(.circular)
+            } else {
+                Label("Share", systemImage: "square.and.arrow.up")
             }
-            .disabled(isSharing || loadError != nil || rawContent.isEmpty)
-            .help("Publish to seshat.page and copy the link")
+        }
+        .disabled(isSharing || loadError != nil || rawContent.isEmpty)
+        .help("Publish to seshat.page and copy the link")
 
-            UserMenu(onShowSharedDocs: { showSharedDocs = true })
+        UserMenu(
+            onShowSharedDocs: { showSharedDocs = true },
+            onSignIn: { showSignIn = true }
+        )
+    }
+
+    /// Share is always visible; a signed-out user gets the sign-in sheet and the
+    /// share continues on its own once the account arrives.
+    private func shareTapped() {
+        if authStore.isAuthenticated {
+            Task { await share() }
+        } else {
+            showSignIn = true
         }
     }
 
@@ -275,6 +290,12 @@ struct MarkdownReader: View {
             rawContent = ""
             loadError = error
         }
+    }
+
+    /// The sheet closes itself on sign-in; "Not now" leaves the user signed out.
+    private func shareAfterSignIn() {
+        guard authStore.isAuthenticated else { return }
+        Task { await share() }
     }
 
     private func share() async {
@@ -596,6 +617,7 @@ private struct ReaderErrorView: View {
 
 private struct UserMenu: View {
     let onShowSharedDocs: () -> Void
+    let onSignIn: () -> Void
     @Environment(AuthStore.self) private var authStore
 
     var body: some View {
@@ -606,10 +628,12 @@ private struct UserMenu: View {
                 Text(user.email)
                     .font(.system(size: 11))
                 Divider()
+                Button("My Shared Documents…", action: onShowSharedDocs)
+                Divider()
+                Button("Sign Out", role: .destructive, action: authStore.signOut)
+            } else {
+                Button("Sign In…", action: onSignIn)
             }
-            Button("My Shared Documents…", action: onShowSharedDocs)
-            Divider()
-            Button("Sign Out", role: .destructive, action: authStore.signOut)
         } label: {
             Image(systemName: "person.crop.circle")
                 .symbolRenderingMode(.hierarchical)
