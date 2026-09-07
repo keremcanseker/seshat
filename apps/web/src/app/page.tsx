@@ -701,6 +701,7 @@ function Closure() {
             </div>
             <div className="foot-col">
               <p className="foot-h">Share</p>
+              <a href="/pricing">Pricing</a>
               <a href="/login">Sign in</a>
               <a href="/dashboard">Your pages</a>
             </div>
