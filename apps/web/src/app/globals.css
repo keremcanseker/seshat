@@ -60,12 +60,14 @@
   --measure-wide: 72rem;
 }
 
-/* The landing (/) pins the whole document to paper regardless of the saved
-   site theme: `html:has(.landing)` outranks `.dark` on <html>. Night on the
-   landing is local to the hero desktop (`.hero-window.dark`), which as a
-   nearer ancestor still wins inside the window. */
+/* Every page except the shared document reader is paper, always: `.paper-page`
+   on its <main> pins the whole document regardless of the saved site theme,
+   because `html:has(.paper-page)` outranks `.dark` on <html>. Only /d/[slug]
+   honours the theme toggle. Night on the landing is local to the hero desktop
+   (`.hero-window.dark`), which as a nearer ancestor still wins inside the
+   window. */
 :root,
-html:has(.landing) {
+html:has(.paper-page) {
   --paper: #fcfaf7;
   --paper-subtle: #f6f2ec;
   --ink: #2a2522;

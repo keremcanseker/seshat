@@ -21,7 +21,7 @@ export default async function Home() {
     getCurrentUser().catch(() => null),
   ]);
   return (
-    <main className="landing text-ink">
+    <main className="paper-page text-ink">
       <HeroDesktop downloadHref={DOWNLOAD_URL} library={LIBRARY} initialId="Inbox/start-here" />
       <div className="mx-auto max-w-[1200px] px-6">
         <About />

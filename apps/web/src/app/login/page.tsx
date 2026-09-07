@@ -14,7 +14,7 @@ export default async function LoginPage() {
   if (user) redirect("/dashboard");
 
   return (
-    <main className="bg-paper text-ink grid min-h-screen place-items-center px-6 font-sans">
+    <main className="paper-page bg-paper text-ink grid min-h-screen place-items-center px-6 font-sans">
       <div className="w-full max-w-[380px] text-center">
         <Link
           href="/"

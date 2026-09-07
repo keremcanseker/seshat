@@ -43,7 +43,7 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <main className="bg-paper text-ink grid min-h-screen place-items-center px-6">
+    <main className="paper-page bg-paper text-ink grid min-h-screen place-items-center px-6">
       <div className="text-center">
         <SeshatMark size={28} className="text-ink-faint mx-auto mb-5" />
         {error ? (

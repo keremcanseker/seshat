@@ -26,7 +26,7 @@ export default async function DashboardPage({
   const awaitingCheckout = params.checkout === "success" && me?.plan !== "premium";
 
   return (
-    <main className="bg-paper text-ink min-h-screen font-sans">
+    <main className="paper-page bg-paper text-ink min-h-screen font-sans">
       <header className="border-rule border-b-[0.5px] px-8 py-5 sm:px-12">
         <div className="mx-auto flex max-w-[920px] items-center justify-between">
           <Link

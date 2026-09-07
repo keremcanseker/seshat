@@ -52,7 +52,7 @@ export default async function PricingPage() {
   const monthly = formatMoney(plans.pricing.monthly.amount, cur);
 
   return (
-    <main className="bg-paper text-ink min-h-screen font-sans">
+    <main className="paper-page text-ink min-h-screen font-sans">
       <header className="px-6 py-5">
         <div className="mx-auto flex max-w-[1040px] items-center justify-between">
           <Link
