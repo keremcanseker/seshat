@@ -32,9 +32,15 @@ const schema = z.object({
   // Preferred: a latest.json the release CI overwrites each tag, so new versions
   // go live with no server redeploy. Falls back to the SESHAT_LATEST_VERSION env.
   SESHAT_RELEASE_MANIFEST_URL: z.string().url().optional(),
-  // Polar.sh billing (KER-791). Optional until the sandbox is wired up.
-  POLAR_PRICE_ID_MONTHLY: z.string().optional(),
-  POLAR_PRICE_ID_YEARLY: z.string().optional(),
+  // Polar.sh billing (KER-791). Optional so the server still boots without them;
+  // /billing then answers 503 instead of crashing at import time.
+  // Polar locks the billing interval at product creation, so monthly and yearly
+  // are two separate products, not two prices on one product.
+  POLAR_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
+  POLAR_ACCESS_TOKEN: z.string().optional(),
+  POLAR_WEBHOOK_SECRET: z.string().optional(),
+  POLAR_PRODUCT_ID_MONTHLY: z.string().optional(),
+  POLAR_PRODUCT_ID_YEARLY: z.string().optional(),
 });
 
 export const env = schema.parse(Bun.env);

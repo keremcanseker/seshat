@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { env } from "./env";
 import { authRoute } from "./routes/auth";
+import { billingRoute } from "./routes/billing";
 import { docsRoute } from "./routes/docs";
 import { downloadsRoute } from "./routes/downloads";
 import { healthRoute } from "./routes/health";
@@ -33,6 +34,7 @@ app.route("/auth", authRoute);
 app.route("/docs", docsRoute);
 app.route("/plans", plansRoute);
 app.route("/me", meRoute);
+app.route("/billing", billingRoute);
 app.route("/downloads", downloadsRoute);
 app.route("/", releaseRoute);
 

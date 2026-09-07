@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { checkoutAction } from "@/app/pricing/actions";
 import { formatMoney, type DisplayFeature, type Interval, type Plans } from "@/lib/plans";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 
 export function PricingCards({ plans, signedIn, downloadHref }: Props) {
   const [interval, setInterval] = useState<Interval>("yearly");
+  const [starting, startCheckout] = useTransition();
   const price = plans.pricing[interval];
   const currency = price.currency;
   const perMonth = interval === "yearly" ? price.amount / 12 : price.amount;
@@ -76,11 +78,11 @@ export function PricingCards({ plans, signedIn, downloadHref }: Props) {
         {signedIn ? (
           <button
             type="button"
-            disabled
-            title="Checkout opens soon"
+            disabled={starting}
+            onClick={() => startCheckout(() => checkoutAction(interval))}
             className="btn-ink mt-auto inline-flex h-10 items-center justify-center rounded-md px-5 text-[14px] font-medium disabled:opacity-60"
           >
-            Get Premium
+            {starting ? "Opening checkout..." : "Get Premium"}
           </button>
         ) : (
           <Link

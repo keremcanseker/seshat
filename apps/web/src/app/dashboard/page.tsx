@@ -3,19 +3,26 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DocList } from "@/components/doc-list";
 import { SeshatMark } from "@/components/seshat-mark";
+import { CheckoutWatcher } from "@/components/checkout-watcher";
 import { getCurrentUser, getMe, getMyDocs } from "@/lib/auth";
 import type { Me } from "@/lib/plans";
-import { logoutAction } from "./actions";
+import { logoutAction, portalAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Your pages · Seshat",
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [docs, me] = await Promise.all([getMyDocs(), getMe()]);
+  const [docs, me, params] = await Promise.all([getMyDocs(), getMe(), searchParams]);
+  // The webhook may not have landed yet; the watcher refreshes until it does.
+  const awaitingCheckout = params.checkout === "success" && me?.plan !== "premium";
 
   return (
     <main className="bg-paper text-ink min-h-screen font-sans">
@@ -68,6 +75,8 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        <CheckoutWatcher pending={awaitingCheckout} />
+
         {me ? <PlanRow me={me} /> : null}
 
         <DocList docs={docs} />
@@ -99,14 +108,14 @@ function PlanRow({ me }: { me: Me }) {
         ) : null}
       </p>
       {premium ? (
-        <button
-          type="button"
-          disabled
-          title="Coming soon"
-          className="border-rule-strong text-ink-muted h-8 rounded-md border-[0.5px] px-3.5 text-[12px] font-medium disabled:opacity-60"
-        >
-          Manage subscription
-        </button>
+        <form action={portalAction}>
+          <button
+            type="submit"
+            className="border-rule-strong text-ink-muted hover:text-ink h-8 rounded-md border-[0.5px] px-3.5 text-[12px] font-medium transition-colors"
+          >
+            Manage subscription
+          </button>
+        </form>
       ) : (
         <Link
           href="/pricing"

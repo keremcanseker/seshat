@@ -33,10 +33,10 @@ export const PLANS: Record<PlanId, { features: readonly FeatureKey[]; quotas: Qu
 
 export type Interval = "monthly" | "yearly";
 
-/** Amounts in minor units (cents). Polar price ids come from env; never sent to clients. */
-export const PRICING: Record<Interval, { amount: number; currency: string; polarPriceId?: string }> = {
-  monthly: { amount: 699, currency: "USD", polarPriceId: env.POLAR_PRICE_ID_MONTHLY },
-  yearly: { amount: 3999, currency: "USD", polarPriceId: env.POLAR_PRICE_ID_YEARLY },
+/** Amounts in minor units (cents). Polar product ids come from env; never sent to clients. */
+export const PRICING: Record<Interval, { amount: number; currency: string; polarProductId?: string }> = {
+  monthly: { amount: 699, currency: "USD", polarProductId: env.POLAR_PRODUCT_ID_MONTHLY },
+  yearly: { amount: 3999, currency: "USD", polarProductId: env.POLAR_PRODUCT_ID_YEARLY },
 };
 
 export type DisplayFeature = { key: FeatureKey | string; label: string; available: boolean };
