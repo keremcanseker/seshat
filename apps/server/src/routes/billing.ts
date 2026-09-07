@@ -118,6 +118,7 @@ billingRoute.post("/webhook", async (c) => {
 type SubscriptionEvent = {
   id: string;
   status: string;
+  cancelAtPeriodEnd: boolean;
   currentPeriodEnd: Date | null;
   customerId: string;
   customer: { id: string; externalId?: string | null };
@@ -144,6 +145,11 @@ async function applySubscription(sub: SubscriptionEvent): Promise<void> {
   // lets the period end decide.
   const dead = ["revoked", "unpaid", "incomplete_expired"].includes(sub.status);
   const periodEnd = sub.currentPeriodEnd ?? null;
+  // Polar keeps a cancelled subscription at status "active" with
+  // cancel_at_period_end until the period actually runs out. Record it as
+  // "canceled" so the dashboard can say when it ends; entitlements still read
+  // premium because the period end is in the future.
+  const status = sub.cancelAtPeriodEnd && sub.status === "active" ? "canceled" : sub.status;
 
   // ponytail: out-of-order deliveries are guarded by the period end alone.
   // Polar retries can arrive late; an older event never rolls a newer one back.
@@ -162,7 +168,7 @@ async function applySubscription(sub: SubscriptionEvent): Promise<void> {
     .update(users)
     .set({
       plan: dead ? "free" : "premium",
-      planStatus: dead ? null : sub.status,
+      planStatus: dead ? null : status,
       planPeriodEnd: dead ? null : periodEnd,
       polarCustomerId: sub.customerId,
       polarSubscriptionId: sub.id,
@@ -170,5 +176,5 @@ async function applySubscription(sub: SubscriptionEvent): Promise<void> {
     })
     .where(eq(users.id, user.id));
 
-  console.log(`polar webhook: ${user.id} -> ${dead ? "free" : "premium"} (${sub.status})`);
+  console.log(`polar webhook: ${user.id} -> ${dead ? "free" : "premium"} (${status})`);
 }
