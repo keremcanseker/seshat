@@ -7,6 +7,7 @@ import { documents, users } from "../db/schema";
 import { app } from "../index";
 import { issueSessionToken } from "../lib/auth";
 import { entitlementsFor } from "../lib/entitlements";
+import { resetRateLimits } from "../lib/rate-limit";
 
 const stamp = Date.now();
 const ids: string[] = [];
@@ -44,6 +45,13 @@ function call(method: string, path: string, token: string, body?: unknown) {
 
 const doc = (n: number) => ({ title: `Doc ${n}`, content: `# Doc ${n}` });
 
+/** Every 4xx body we hand a client must be free of database ids. */
+function expectNoInternalIds(body: unknown): void {
+  const text = JSON.stringify(body);
+  expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  for (const id of ids) expect(text).not.toContain(id);
+}
+
 test("free user: 1 link, then 402, delete frees the quota, newer doc is read-only", async () => {
   const first = await call("POST", "/docs", tokens.free, doc(1));
   expect(first.status).toBe(201);
@@ -51,7 +59,9 @@ test("free user: 1 link, then 402, delete frees the quota, newer doc is read-onl
 
   const second = await call("POST", "/docs", tokens.free, doc(2));
   expect(second.status).toBe(402);
-  expect(await second.json()).toMatchObject({ code: "quota_exceeded", used: 1, limit: 1 });
+  const quotaBody = await second.json();
+  expect(quotaBody).toMatchObject({ code: "quota_exceeded", used: 1, limit: 1 });
+  expectNoInternalIds(quotaBody);
 
   const me = await (await call("GET", "/me", tokens.free)).json();
   expect(me).toMatchObject({ plan: "free", usage: { activeLinks: 1, limit: 1 } });
@@ -66,7 +76,9 @@ test("free user: 1 link, then 402, delete frees the quota, newer doc is read-onl
     .returning({ slug: documents.slug });
   const readOnly = await call("PUT", `/docs/${extra!.slug}`, tokens.free, doc(3));
   expect(readOnly.status).toBe(402);
-  expect(await readOnly.json()).toMatchObject({ code: "read_only_over_quota" });
+  const readOnlyBody = await readOnly.json();
+  expect(readOnlyBody).toMatchObject({ code: "read_only_over_quota" });
+  expectNoInternalIds(readOnlyBody);
   expect((await call("GET", `/docs/${extra!.slug}`, "")).status).toBe(200);
   await db.delete(documents).where(eq(documents.slug, extra!.slug));
 
@@ -79,6 +91,28 @@ test("premium user creates freely", async () => {
   expect((await call("POST", "/docs", tokens.premium, doc(2))).status).toBe(201);
   const me = await (await call("GET", "/me", tokens.premium)).json();
   expect(me).toMatchObject({ plan: "premium", usage: { activeLinks: 2, limit: null } });
+});
+
+test("free account cannot cycle create and delete forever", async () => {
+  resetRateLimits();
+  // Start from an empty library so the quota never masks the rate limit.
+  await db.delete(documents).where(eq(documents.ownerId, ids[0]!));
+  // Ten creates are allowed per hour; each one is deleted so the quota never bites.
+  for (let i = 0; i < 10; i++) {
+    const made = await call("POST", "/docs", tokens.free, doc(i));
+    expect(made.status).toBe(201);
+    const { slug } = (await made.json()) as { slug: string };
+    expect((await call("DELETE", `/docs/${slug}`, tokens.free)).status).toBe(200);
+  }
+  const blocked = await call("POST", "/docs", tokens.free, doc(11));
+  expect(blocked.status).toBe(429);
+  const body = await blocked.json();
+  expect(body).toMatchObject({ code: "rate_limited" });
+  expectNoInternalIds(body);
+
+  // Premium is not rate limited here.
+  resetRateLimits();
+  expect((await call("POST", "/docs", tokens.premium, doc(12))).status).toBe(201);
 });
 
 test("canceled subscription stays premium until period end", () => {

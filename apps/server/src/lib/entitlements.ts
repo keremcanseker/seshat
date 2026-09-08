@@ -4,6 +4,16 @@ import { db } from "../db/client";
 import { documents, type User } from "../db/schema";
 import { env } from "../env";
 import { PLANS, type FeatureKey, type PlanId, type Quotas } from "./plans";
+import { overLimit } from "./rate-limit";
+
+/**
+ * A free account can only hold one document, but deleting and re-creating in a
+ * loop would turn the free tier into a spam host for public slugs. This caps the
+ * churn without touching anyone's real usage. Premium accounts are not limited
+ * here; KER-817 covers the rest of the abuse surface.
+ */
+const FREE_CREATES_PER_HOUR = 10;
+const HOUR_MS = 60 * 60 * 1000;
 
 export type Entitlements = {
   plan: PlanId;
@@ -52,6 +62,15 @@ export async function countDocuments(ownerId: string): Promise<number> {
 export async function assertCanCreateDocument(user: User): Promise<void> {
   const limit = entitlementsFor(user).quotas.activeLinks;
   if (limit === null) return;
+  if (overLimit(`docs:create:${user.id}`, FREE_CREATES_PER_HOUR, HOUR_MS)) {
+    throw new HTTPException(429, {
+      message: "too many links created, try again later",
+      res: Response.json(
+        { error: "too many links created, try again later", code: "rate_limited" },
+        { status: 429, headers: { "retry-after": String(HOUR_MS / 1000) } },
+      ),
+    });
+  }
   const used = await countDocuments(user.id);
   if (used >= limit) {
     throw paymentRequired(
