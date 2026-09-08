@@ -59,6 +59,8 @@ private struct WorkspaceRootContainer: View {
             window.tabbingMode = .disallowed   // keeps the system "Show Next Tab" items out of the Window menu
             router.registerWorkspace(window: window)
             self.window = window
+            // ponytail: one turn later, the split view controller SwiftUI builds exists by then.
+            Task { @MainActor in SidebarChrome.flattenTitlebar(in: window) }
         })
         .onChange(of: router.workspaceTarget) { _, target in
             guard let target else { return }

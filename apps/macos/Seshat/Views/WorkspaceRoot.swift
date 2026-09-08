@@ -79,6 +79,10 @@ struct WorkspaceRoot: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        // The sidebar column is a translucent material, and it reaches up into the
+        // titlebar: in full screen that patch reads as glass next to the flat toolbar.
+        // One opaque colour across the whole toolbar removes the seam.
+        .toolbarBackground(Color.seshatSidebarBg, for: .windowToolbar)
         .focusedSceneValue(\.workspaceTabs, tabs)
         .onChange(of: router.workspaceRefreshTick) { _, _ in
             refresh()
