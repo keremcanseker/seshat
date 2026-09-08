@@ -1552,7 +1552,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     top: 44px;
     bottom: 0;
     transform: translateX(-50%);
-    width: min(1080px, 71%);
+    width: min(1400px, 72%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1584,6 +1584,46 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     padding: 12px 10px 0;
     background: var(--paper-subtle);
     border-right: 0.5px solid var(--rule);
+  }
+
+  /* Workspace tabs: equal-width pills, the title dissolving at the trailing
+     edge instead of ending in an ellipsis, like the toolbar strip in the app. */
+  .hero-tab {
+    width: 132px;
+    height: 24px;
+    flex: 0 1 auto;
+    min-width: 72px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 12.5px;
+    cursor: default;
+    overflow: hidden;
+    transition: background 140ms ease, color 140ms ease;
+  }
+
+  .hero-tab:hover,
+  .hero-tab.is-active {
+    background: color-mix(in oklab, var(--rule-strong) 45%, transparent);
+    color: var(--ink);
+  }
+
+  .hero-tab.is-active {
+    font-weight: 500;
+  }
+
+  /* Full-width band so a short title ends before the fade zone and stays
+     opaque; an overlong one dissolves instead of ending in "…". */
+  .hero-tab-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
   }
 
   .hero-outline {

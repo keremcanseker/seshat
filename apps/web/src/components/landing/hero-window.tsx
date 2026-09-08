@@ -1,12 +1,13 @@
 import { Fragment } from "react";
 import {
   AlignLeft,
-  FileText,
-  Folder,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Moon,
   PanelLeft,
   Plus,
-  RefreshCw,
+  Printer,
   Share,
   Sun,
 } from "lucide-react";
@@ -27,8 +28,8 @@ type Props = {
 
 // The reader window as it looks on a Mac. Colors are theme tokens; the `dark`
 // class flips them for the window alone, the page around it stays paper.
-// The sidebar is a real library: pick a file and the document, path and
-// outline follow.
+// Mirrors the shipped chrome: sidebar toggle and ‹ › next to the traffic
+// lights, workspace tabs in the toolbar, Linear-density sidebar rows.
 export function HeroWindow({
   library,
   activeId,
@@ -45,42 +46,41 @@ export function HeroWindow({
     library.find((g) => g.files.some((f) => f.id === activeId)) ?? library[0];
   const active = activeGroup.files.find((f) => f.id === activeId) ?? activeGroup.files[0];
 
+  // Tabs are the files opened so far, in the order they were opened — the app's
+  // workspace tabs, minus the 10-tab cap the mock never reaches.
+  const files = library.flatMap((g) => g.files);
+  const tabs = read
+    .map((id) => files.find((f) => f.id === id))
+    .filter((f): f is LibraryFile => Boolean(f))
+    .slice(-5);
+
   return (
     <div className={`hero-window ${dark ? "dark" : ""}`}>
       {sidebar ? (
         <aside className="hero-sidebar">
-          <div className="flex items-center px-1 pb-4">
+          <div className="flex items-center gap-3 px-1 pb-3">
             <div className="flex gap-2">
               <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
               <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
               <span className="h-3 w-3 rounded-full bg-[#28c840]" />
             </div>
-            <PanelLeft size={14} className="text-ink-muted ml-auto" />
+            <span className="text-ink-faint ml-auto flex items-center gap-1.5">
+              <PanelLeft size={14} />
+              <ChevronLeft size={13} />
+              <ChevronRight size={13} />
+            </span>
           </div>
-          <div className="text-ink-faint flex items-center gap-1.5 px-1 pb-3">
-            <span className="shrink-0 text-[10px] font-semibold tracking-[0.14em]">LIBRARY</span>
-            <span className="text-ink-muted flex min-w-0 items-center gap-1 text-[12px] font-medium">
-              <Folder size={12} className="shrink-0" />
-              <span className="truncate">{activeGroup.name}</span>
-              <span className="shrink-0">⌄</span>
+          <div className="flex items-center px-1 pb-2">
+            <span className="text-ink flex items-center gap-1 text-[12px] font-medium">
+              {activeGroup.name}
+              <ChevronDown size={9} className="text-ink-faint" strokeWidth={3} />
             </span>
-            <span className="text-ink-faint ml-auto flex shrink-0 items-center gap-2">
-              <Plus size={13} />
-              <Folder size={13} />
-              <RefreshCw size={12} />
-            </span>
+            <Plus size={12} className="text-ink-faint ml-auto" strokeWidth={2.5} />
           </div>
           <div className="min-h-0 flex-1 overflow-hidden">
-            {library.map((g, gi) => (
+            {library.map((g) => (
               <Fragment key={g.name}>
-                {gi === 0 ? (
-                  <div className="text-gold bg-gold/10 mb-2 flex w-fit items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.12em]">
-                    <span className="bg-gold inline-block h-[7px] w-[7px] rounded-full" />
-                    {g.name.toUpperCase()}
-                  </div>
-                ) : (
-                  <Group label={g.name.toUpperCase()} />
-                )}
+                <Group label={g.name.toUpperCase()} />
                 {g.files.map((f) => (
                   <Row
                     key={f.id}
@@ -97,21 +97,20 @@ export function HeroWindow({
       ) : null}
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center px-4 pt-3">
+        <div className="flex items-center gap-3 px-3 pt-2.5 pb-1">
           {!sidebar ? (
-            <div className="mr-3 flex gap-2">
+            <div className="mr-1 flex gap-2">
               <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
               <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
               <span className="h-3 w-3 rounded-full bg-[#28c840]" />
             </div>
           ) : null}
-          <span className="text-ink-faint bg-ink/6 flex min-w-0 items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[11px]">
-            <Folder size={11} className="shrink-0" />
-            <span className="truncate">
-              ~/Seshat/{activeGroup.name}/{active.name}.md
-            </span>
-          </span>
-          <div className="seshat-doc-chrome-toolbar ml-auto">
+          <div className="flex min-w-0 items-center gap-[2px] overflow-hidden">
+            {tabs.map((f) => (
+              <Tab key={f.id} file={f} active={f.id === active.id} onClick={() => onSelect(f.id)} />
+            ))}
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-[2px]">
             <button
               type="button"
               className={`seshat-doc-chrome-button ${outline ? "is-active" : ""}`}
@@ -128,6 +127,9 @@ export function HeroWindow({
             >
               {dark ? <Sun size={13} /> : <Moon size={13} />}
             </button>
+            <span className="seshat-doc-chrome-button" aria-hidden>
+              <Printer size={13} />
+            </span>
             <button
               type="button"
               className="seshat-doc-chrome-button"
@@ -165,14 +167,31 @@ export function HeroWindow({
   );
 }
 
+// Equal-width pill, filled when active; the title fades out at the trailing edge.
+function Tab({ file, active, onClick }: { file: LibraryFile; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`hero-tab ${active ? "is-active" : ""}`}
+      aria-current={active ? "page" : undefined}
+    >
+      <span className="hero-tab-title">{file.name}.md</span>
+    </button>
+  );
+}
+
+// Folder header: mono caps with the collapse chevron right after the name.
 function Group({ label }: { label: string }) {
   return (
-    <div className="text-ink-faint px-2 pt-4 pb-1.5 font-mono text-[9.5px] font-medium tracking-[0.18em]">
+    <div className="text-ink-faint flex items-center gap-1 px-1.5 pt-3 pb-0.5 font-mono text-[10px] font-medium tracking-[0.12em]">
       {label}
+      <ChevronDown size={7} strokeWidth={4} className="opacity-60" />
     </div>
   );
 }
 
+// 26px row, no document icon, unread dot in the gutter, date on hover only.
 function Row({
   file,
   unread,
@@ -188,20 +207,17 @@ function Row({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full cursor-default items-center gap-1.5 rounded-md border-0 px-2 py-[4.5px] text-left text-[12.5px] ${
+      className={`group flex h-[26px] w-full cursor-default items-center gap-2 rounded-md border-0 px-1.5 text-left text-[13px] ${
         selected ? "bg-ink/8" : "hover:bg-ink/5 bg-transparent"
       }`}
     >
       <span
-        className={`h-[5px] w-[5px] shrink-0 rounded-full ${
-          unread ? "bg-gold" : "bg-transparent"
-        }`}
+        className={`h-[5px] w-[5px] shrink-0 rounded-full ${unread ? "bg-gold" : "bg-transparent"}`}
       />
-      <FileText size={11} className={`shrink-0 ${unread ? "text-ink-muted" : "text-ink-faint"}`} />
-      <span className={`truncate ${unread ? "text-ink font-semibold" : "text-ink-muted"}`}>
-        {file.name}
+      <span className={`text-ink truncate ${unread ? "font-semibold" : ""}`}>{file.name}</span>
+      <span className="text-ink-faint ml-auto shrink-0 font-mono text-[10.5px] opacity-0 transition-opacity group-hover:opacity-100">
+        {file.age}
       </span>
-      <span className="text-ink-faint ml-auto shrink-0 font-mono text-[10px]">{file.age}</span>
     </button>
   );
 }
