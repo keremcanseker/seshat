@@ -15,7 +15,10 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# This hook lives at scripts/hooks/, so the repo root is two levels up, not one.
+# With one level ROOT was scripts/, the `-- apps/macos` pathspec matched nothing,
+# and every release was silently skipped.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ZERO="0000000000000000000000000000000000000000"
 
 publish=0
