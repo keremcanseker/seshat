@@ -1,10 +1,6 @@
 import { Hono } from "hono";
-import { db } from "../db/client";
-import { downloadEvents } from "../db/schema";
 import { env } from "../env";
-import { sendDownloadNotification } from "../lib/notify";
 
-const MAX_FIELD_LEN = 512;
 const MANIFEST_TTL_MS = 60_000;
 
 type VersionBody = { version: string; url: string; notes: string | null };
@@ -52,23 +48,11 @@ releaseRoute.get("/version", async (c) => {
   return c.json({ error: "no release configured" }, 404);
 });
 
-// The public "Download for macOS" target: logs the event, then redirects to the
-// current DMG. Always serves the latest because SESHAT_DMG_URL is the only source.
-releaseRoute.get("/download", async (c) => {
+// The public "Download for macOS" target: redirects to the current DMG. Always
+// serves the latest because SESHAT_DMG_URL is the only source.
+releaseRoute.get("/download", (c) => {
   if (!env.SESHAT_DMG_URL) {
     return c.json({ error: "download not available" }, 503);
-  }
-  const userAgent = c.req.header("user-agent")?.slice(0, MAX_FIELD_LEN) ?? null;
-  const referrer = c.req.header("referer")?.slice(0, MAX_FIELD_LEN) ?? null;
-  try {
-    await db
-      .insert(downloadEvents)
-      .values({ userAgent, referrer, platform: "macos" });
-    sendDownloadNotification({ userAgent, referrer, platform: "macos" }).catch(
-      (err) => console.error("download notify failed:", err),
-    );
-  } catch (err) {
-    console.error("download log failed:", err);
   }
   return c.redirect(env.SESHAT_DMG_URL, 302);
 });

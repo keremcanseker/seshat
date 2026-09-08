@@ -18,11 +18,6 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   AUTH_JWT_SECRET: z.string().min(32),
   AUTH_MACOS_REDIRECT: z.string().default("seshat://auth/callback"),
-  RESEND_API_KEY: z.string().optional(),
-  DOWNLOAD_NOTIFY_TO: z.string().email().optional(),
-  DOWNLOAD_NOTIFY_FROM: z
-    .string()
-    .default("Seshat <notifications@seshat.page>"),
   // Latest macOS build, served from our own infra (repo is private). Point
   // SESHAT_DMG_URL at the DMG on the bucket and bump SESHAT_LATEST_VERSION on
   // each release; /download redirects to it and /version drives the in-app banner.

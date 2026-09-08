@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlignLeft, Link2, Moon, PanelLeft, Sun } from "lucide-react";
-import { DownloadButton } from "@/components/download-button";
 import type { OutlineEntry } from "@/lib/extract-outline";
 import { HeroWindow } from "./hero-window";
 
@@ -141,10 +140,10 @@ export function HeroDesktop({ downloadHref, library, initialId }: Props) {
                 A native macOS reader for the markdown your agents write and you keep.
                 Read it as a page, not source. Send a link, not a file.
               </p>
-              <DownloadButton href={downloadHref} className="btn-ink hero-copy-cta">
+              <a href={downloadHref} className="btn-ink hero-copy-cta">
                 <AppleGlyph />
                 Download for macOS
-              </DownloadButton>
+              </a>
               <p className="hero-copy-fine">Free. macOS 14 or later.</p>
             </div>
           </div>

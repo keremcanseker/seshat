@@ -29,6 +29,13 @@
       "when": 1788702075535,
       "tag": "0003_nosy_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788848292756,
+      "tag": "0004_drop_download_events",
+      "breakpoints": true
     }
   ]
 }

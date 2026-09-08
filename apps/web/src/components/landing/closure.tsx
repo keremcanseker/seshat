@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DownloadButton } from "@/components/download-button";
 import { AppleGlyph } from "@/components/landing/hero-desktop";
 
 type Props = {
@@ -17,13 +16,13 @@ export function Closure({ downloadHref, title, lede }: Props) {
           {title}
         </h2>
         <p className="close-lede">{lede}</p>
-        <DownloadButton
+        <a
           href={downloadHref}
           className="close-cta btn-ink inline-flex h-10 items-center gap-2 rounded-full px-5 text-[14px] font-medium no-underline"
         >
           <AppleGlyph />
           Download for macOS
-        </DownloadButton>
+        </a>
         <p className="close-fine">No account to read. macOS 14 or later.</p>
       </section>
 
