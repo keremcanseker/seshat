@@ -196,6 +196,7 @@ struct Sidebar: View {
         // .sidebar pins rows to the system source-list height (32pt on macOS 26);
         // .plain sizes rows from content, which is how we get Linear's 26pt.
         .listStyle(.plain)
+        .scrollIndicators(.never)   // .plain brings the wide legacy scroller; sidebar stays minimal
         .listSectionSeparator(.hidden)
         .focusEffectDisabled()   // no focus ring around the list when a row is clicked
         .scrollContentBackground(.hidden)
