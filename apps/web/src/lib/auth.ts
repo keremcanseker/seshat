@@ -73,17 +73,36 @@ export async function getMyDocs(): Promise<SharedDocSummary[]> {
   return body.documents;
 }
 
-/** Deletes one of the signed-in user's docs via `DELETE /docs/:slug`. */
-export async function deleteMyDoc(slug: string): Promise<void> {
+/** Lists the signed-in user's folder sites via `GET /sites/me`. */
+export async function getMySites(): Promise<SharedDocSummary[]> {
   const token = await getSessionToken();
-  if (!token) throw new Error("not authenticated");
+  if (!token) return [];
 
-  const res = await fetch(`${SESHAT_API_BASE}/docs/${encodeURIComponent(slug)}`, {
-    method: "DELETE",
-    headers: { authorization: `Bearer ${token}` },
+  const res = await fetch(`${SESHAT_API_BASE}/sites/me`, {
+    headers: { authorization: `Bearer ${token}`, accept: "application/json" },
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to delete document (${res.status})`);
+    throw new Error(`Failed to load sites (${res.status})`);
+  }
+  const body = (await res.json()) as { sites: SharedDocSummary[] };
+  return body.sites;
+}
+
+/** Deletes one of the signed-in user's docs or sites. */
+export async function deleteMyItem(kind: "doc" | "site", slug: string): Promise<void> {
+  const token = await getSessionToken();
+  if (!token) throw new Error("not authenticated");
+
+  const res = await fetch(
+    `${SESHAT_API_BASE}/${kind === "site" ? "sites" : "docs"}/${encodeURIComponent(slug)}`,
+    {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to delete ${kind} (${res.status})`);
   }
 }

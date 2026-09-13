@@ -1,4 +1,4 @@
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 
@@ -85,15 +85,20 @@ const components: Components = {
 
 type Props = {
   content: string;
+  /** Rewrites hrefs before the default sanitizer runs; sites use it for page links. */
+  resolveHref?: (href: string) => string;
 };
 
-export function SeshatDoc({ content }: Props) {
+export function SeshatDoc({ content, resolveHref }: Props) {
   return (
     <article className="seshat-doc">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSlug]}
         components={components}
+        urlTransform={(url, key) =>
+          defaultUrlTransform(key === "href" && resolveHref ? resolveHref(url) : url)
+        }
       >
         {content}
       </ReactMarkdown>

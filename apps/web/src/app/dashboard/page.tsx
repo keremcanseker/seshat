@@ -5,7 +5,7 @@ import { DocList } from "@/components/doc-list";
 import { SeshatMark } from "@/components/seshat-mark";
 import { SeshatStar } from "@/components/seshat-star";
 import { CheckoutWatcher } from "@/components/checkout-watcher";
-import { getCurrentUser, getMe, getMyDocs } from "@/lib/auth";
+import { getCurrentUser, getMe, getMyDocs, getMySites } from "@/lib/auth";
 import type { Me } from "@/lib/plans";
 import { logoutAction, portalAction } from "./actions";
 
@@ -21,7 +21,16 @@ export default async function DashboardPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [docs, me, params] = await Promise.all([getMyDocs(), getMe(), searchParams]);
+  const [docs, sites, me, params] = await Promise.all([
+    getMyDocs(),
+    getMySites(),
+    getMe(),
+    searchParams,
+  ]);
+  const items = [
+    ...sites.map((s) => ({ ...s, kind: "site" as const })),
+    ...docs.map((d) => ({ ...d, kind: "doc" as const })),
+  ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   // The webhook may not have landed yet; the watcher refreshes until it does.
   const awaitingCheckout = params.checkout === "success" && me?.plan !== "premium";
 
@@ -70,7 +79,7 @@ export default async function DashboardPage({
             Shared documents
           </h1>
           <p className="text-ink-muted mt-3 max-w-[520px] text-[15px] leading-[1.6]">
-            Every markdown file you shared with{" "}
+            Every markdown file or folder you shared with{" "}
             <code className="font-mono text-[13px]">seshat share</code>. Open it,
             copy its link, or remove its public page.
           </p>
@@ -80,7 +89,7 @@ export default async function DashboardPage({
 
         {me ? <PlanRow me={me} /> : null}
 
-        <DocList docs={docs} />
+        <DocList docs={items} />
       </section>
     </main>
   );

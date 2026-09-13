@@ -30,3 +30,6 @@ export type SharedDocSummary = {
   createdAt: string;
   updatedAt: string;
 };
+
+/** A doc (/d/) or a folder site (/s/) on the dashboard. */
+export type SharedItem = SharedDocSummary & { kind: "doc" | "site" };

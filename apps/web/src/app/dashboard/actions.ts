@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { deleteMyDoc, getSessionToken } from "@/lib/auth";
+import { deleteMyItem, getSessionToken } from "@/lib/auth";
 import { SESHAT_API_BASE, SESSION_COOKIE } from "@/lib/session";
 
-/** Deletes one of the signed-in user's shared docs, then refreshes the list. */
-export async function deleteDocAction(slug: string): Promise<void> {
-  await deleteMyDoc(slug);
+/** Deletes one of the signed-in user's shared docs or sites, then refreshes the list. */
+export async function deleteItemAction(kind: "doc" | "site", slug: string): Promise<void> {
+  await deleteMyItem(kind, slug);
   revalidatePath("/dashboard");
 }
 

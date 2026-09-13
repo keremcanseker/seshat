@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
   "users",
@@ -54,6 +54,45 @@ export const documents = pgTable(
     index("documents_slug_idx").on(t.slug),
     index("documents_owner_idx").on(t.ownerId),
   ],
+);
+
+/** A folder published as one site (KER-811). Pages are replaced wholesale on every publish. */
+export const sites = pgTable(
+  "sites",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    ownerId: text("owner_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [index("sites_owner_idx").on(t.ownerId)],
+);
+
+export const sitePages = pgTable(
+  "site_pages",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    /** Folder-relative path without the .md extension, e.g. "guides/setup". */
+    path: text("path").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+  },
+  (t) => [uniqueIndex("site_pages_site_path_idx").on(t.siteId, t.path)],
 );
 
 export type User = typeof users.$inferSelect;

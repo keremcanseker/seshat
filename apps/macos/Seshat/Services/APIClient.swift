@@ -162,3 +162,20 @@ struct CreateDocResponse: Decodable {
     let title: String
     let url: String
 }
+
+struct SitePage: Encodable, Equatable {
+    let path: String
+    let title: String
+    let content: String
+}
+
+struct CreateSiteBody: Encodable {
+    let title: String
+    let pages: [SitePage]
+}
+
+struct CreateSiteResponse: Decodable {
+    let slug: String
+    let title: String
+    let url: String
+}

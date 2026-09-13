@@ -4,11 +4,11 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, Copy, ExternalLink, Trash2 } from "lucide-react";
 import { SeshatMark } from "@/components/seshat-mark";
-import { deleteDocAction } from "@/app/dashboard/actions";
-import type { SharedDocSummary } from "@/lib/session";
+import { deleteItemAction } from "@/app/dashboard/actions";
+import type { SharedItem } from "@/lib/session";
 
 type Props = {
-  docs: SharedDocSummary[];
+  docs: SharedItem[];
 };
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
@@ -42,18 +42,18 @@ export function DocList({ docs }: Props) {
   return (
     <ul className="border-rule divide-rule m-0 list-none divide-y rounded-lg border-[0.5px] p-0">
       {docs.map((doc) => (
-        <DocRow key={doc.slug} doc={doc} />
+        <DocRow key={`${doc.kind}:${doc.slug}`} doc={doc} />
       ))}
     </ul>
   );
 }
 
-function DocRow({ doc }: { doc: SharedDocSummary }) {
+function DocRow({ doc }: { doc: SharedItem }) {
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [isDeleting, startDelete] = useTransition();
 
-  const path = `/d/${doc.slug}`;
+  const path = `/${doc.kind === "site" ? "s" : "d"}/${doc.slug}`;
 
   async function copyLink() {
     const url =
@@ -76,7 +76,7 @@ function DocRow({ doc }: { doc: SharedDocSummary }) {
       return;
     }
     startDelete(async () => {
-      await deleteDocAction(doc.slug);
+      await deleteItemAction(doc.kind, doc.slug);
     });
   }
 
@@ -90,7 +90,8 @@ function DocRow({ doc }: { doc: SharedDocSummary }) {
           {doc.title}
         </Link>
         <p className="text-ink-faint m-0 mt-1 text-[12px] tabular-nums">
-          Shared {formatDate(doc.createdAt)}
+          {doc.kind === "site" ? "Site · shared " : "Shared "}
+          {formatDate(doc.createdAt)}
           {doc.updatedAt && doc.updatedAt !== doc.createdAt
             ? ` · updated ${formatDate(doc.updatedAt)}`
             : ""}

@@ -39,3 +39,28 @@ export async function fetchSharedDoc(slug: string): Promise<SharedDoc | null> {
     updatedAt: body.updated_at,
   };
 }
+
+export type SitePage = { path: string; title: string; content: string };
+
+export type SharedSite = {
+  slug: string;
+  title: string;
+  pages: SitePage[];
+};
+
+export async function fetchSharedSite(slug: string): Promise<SharedSite | null> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/sites/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    return null;
+  }
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Failed to load site (${response.status})`);
+  }
+  return (await response.json()) as SharedSite;
+}

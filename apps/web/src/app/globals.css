@@ -618,6 +618,216 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
     color: var(--ink-muted);
   }
 
+  /* ── Folder site: page tree on the left (KER-811) ─────── */
+
+  .seshat-site {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .seshat-site-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .seshat-site-sidebar {
+    position: sticky;
+    top: 0;
+    flex: 0 0 248px;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: 22px 12px 32px 20px;
+    border-right: 0.5px solid var(--rule);
+    scrollbar-width: none;
+  }
+
+  .seshat-site-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .seshat-site-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 18px;
+    padding: 4px 8px 4px 6px;
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  .seshat-site-brand span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seshat-site-brand:hover {
+    background: color-mix(in oklab, var(--ink) 5%, transparent);
+  }
+
+  .seshat-site-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 0 10px;
+    height: 30px;
+    border: 0.5px solid var(--rule-strong);
+    border-radius: 7px;
+    color: var(--ink-faint);
+    background: color-mix(in oklab, var(--ink) 3%, transparent);
+  }
+
+  .seshat-site-search:focus-within {
+    border-color: var(--gold);
+    color: var(--ink-muted);
+  }
+
+  .seshat-site-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .seshat-site-search input::placeholder {
+    color: var(--ink-faint);
+  }
+
+  .seshat-site-tree,
+  .seshat-site-tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .seshat-site-folder {
+    margin: 10px 0 2px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seshat-site-link {
+    display: block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--ink-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 140ms ease, background 140ms ease;
+  }
+
+  .seshat-site-link:hover {
+    color: var(--ink);
+    background: color-mix(in oklab, var(--ink) 5%, transparent);
+  }
+
+  .seshat-site-link.is-active {
+    color: var(--ink);
+    font-weight: 500;
+    background: color-mix(in oklab, var(--gold) 14%, transparent);
+  }
+
+  .seshat-site-result {
+    white-space: normal;
+    padding-left: 10px;
+  }
+
+  .seshat-site-result span {
+    display: block;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .seshat-site-result small {
+    display: block;
+    margin-top: 2px;
+    color: var(--ink-faint);
+    font-size: 11.5px;
+    line-height: 1.4;
+  }
+
+  .seshat-site-empty {
+    margin: 8px 10px;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+
+  .seshat-site-menu {
+    display: none;
+    position: fixed;
+    top: 22px;
+    left: 28px;
+    z-index: 70;
+    width: 30px;
+    height: 30px;
+    border: 0.5px solid var(--rule);
+    background: color-mix(in oklab, var(--paper) 84%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+  }
+
+  .seshat-site-backdrop {
+    display: none;
+  }
+
+  /* Under 900px the tree becomes a sheet behind a fixed toggle. */
+  @media (max-width: 900px) {
+    .seshat-site-menu,
+    .seshat-site-backdrop {
+      display: block;
+    }
+
+    .seshat-site-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      background: color-mix(in oklab, var(--ink) 28%, transparent);
+      animation: seshat-overlay-fade 180ms ease both;
+    }
+
+    .seshat-site-sidebar {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 65;
+      width: min(78vw, 280px);
+      padding-top: 64px;
+      background: var(--paper);
+      box-shadow: 16px 0 40px color-mix(in oklab, var(--ink) 16%, transparent);
+    }
+
+    .seshat-site-sidebar.is-open {
+      display: block;
+    }
+  }
+
   /* ── Article container ────────────────────────────────── */
 
   .seshat-doc {

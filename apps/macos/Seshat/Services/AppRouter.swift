@@ -140,18 +140,28 @@ final class AppRouter {
                     NSLocalizedDescriptionKey: "Not signed in. Open Seshat and sign in first.",
                 ])
             }
-            let markdown = try String(contentsOf: source, encoding: .utf8)
-            guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw CocoaError(.fileReadCorruptFile, userInfo: [
-                    NSLocalizedDescriptionKey: "Nothing to share, the file is empty.",
-                ])
+            let url: String
+            if source.hasDirectoryPath || (try? source.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                // A folder becomes a site (KER-811); the server gates it on Premium.
+                url = try await SitePublisher.publish(folderURL: source, api: authStore.api).0.url
+            } else {
+                let markdown = try String(contentsOf: source, encoding: .utf8)
+                guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw CocoaError(.fileReadCorruptFile, userInfo: [
+                        NSLocalizedDescriptionKey: "Nothing to share, the file is empty.",
+                    ])
+                }
+                url = try await SharePublisher.publish(
+                    fileURL: source, content: markdown, api: authStore.api
+                ).0.url
             }
-            let (response, _) = try await SharePublisher.publish(
-                fileURL: source, content: markdown, api: authStore.api
-            )
-            try Data(response.url.utf8).write(to: output, options: .atomic)
+            try Data(url.utf8).write(to: output, options: .atomic)
             await authStore.refreshMe()
-            seshatLog("AppRouter.shareHeadless — \(response.url)")
+            seshatLog("AppRouter.shareHeadless — \(url)")
+        } catch APIError.paymentRequired(_, let upgradeURL, let message) {
+            let note = upgradeURL.map { "\(message) Upgrade at \($0.absoluteString)" } ?? message
+            seshatLog("AppRouter.shareHeadless — premium required")
+            try? Data(note.utf8).write(to: errorFile)
         } catch {
             seshatLog("AppRouter.shareHeadless — failed: \(error.localizedDescription)")
             try? Data(error.localizedDescription.utf8).write(to: errorFile)

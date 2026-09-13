@@ -112,6 +112,8 @@ After install, the CLI works from any terminal: `seshat open file.md`, `seshat g
 
 `seshat share` (KER-806) rides the export pattern: `seshat://share?path=…&out=…` → `AppRouter.shareHeadless` → `SharePublisher.publish` (same PUT/POST + `ShareStore` slug memory as the toolbar button) → URL written to `out`, error to `out.error`; the shell prints the link and `pbcopy`s it. Needs the app signed in. No MCP server: agents call the CLI.
 
+`seshat share ./docs/` (KER-811, Premium `folder_site`) takes the same route: a directory makes `shareHeadless` call `SitePublisher.publish`, which walks the folder for `.md` files (hidden dirs skipped, paths relative and extension-less) and sends the whole set to `POST/PUT /sites`; the server replaces every page on each publish. The web renders it at `/s/<slug>/<path>` with a page tree and client-side search (`site-sidebar.tsx`); relative `.md` links resolve to sibling pages through `SeshatDoc`'s `resolveHref`. No themes, no nav config: a folder of pamphlets with an index.
+
 ### Clean-state debug helper
 
 ```sh

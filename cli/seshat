@@ -13,8 +13,9 @@ usage:
   seshat global [<file.md>]   Open the workspace (opens the file as a tab if given)
   seshat export <file.md> [out.pdf] [--landscape]
                               Save a PDF (default: next to the file, same name)
-  seshat share <file.md>      Publish to seshat.page, print and copy the link
-                              (re-sharing the same file updates its link)
+  seshat share <file.md|dir>  Publish to seshat.page, print and copy the link
+                              (re-sharing updates the link; a folder becomes
+                              a site with a page tree and search, Premium)
   seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)
   seshat help                 Show this message
 EOF
@@ -141,11 +142,11 @@ case "$cmd" in
     share)
         src="${1:-}"
         if [ -z "$src" ]; then
-            echo "seshat share: missing <file.md>" >&2
+            echo "seshat share: missing <file.md|dir>" >&2
             exit 1
         fi
-        if [ ! -f "$src" ]; then
-            echo "seshat: file not found: $src" >&2
+        if [ ! -f "$src" ] && [ ! -d "$src" ]; then
+            echo "seshat: not found: $src" >&2
             exit 1
         fi
         src="$(abs_path "$src")"
