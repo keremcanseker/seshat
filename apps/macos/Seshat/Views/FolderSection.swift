@@ -7,6 +7,7 @@ struct FolderSection<Files: View>: View {
     let onDrop: ([URL]) -> Void
     let onNewFileHere: () -> Void
     let onImportHere: () -> Void
+    let onShareFolder: () -> Void
     let onRenameFolder: () -> Void
     let onRevealFolder: () -> Void
     let onDeleteFolder: () -> Void
@@ -76,6 +77,11 @@ struct FolderSection<Files: View>: View {
                     onSelectAsDestination()
                 }
                 .disabled(isImportDestination)
+                Divider()
+                Button("Share as Site…", systemImage: "globe") {
+                    onShareFolder()
+                }
+                .disabled(folder.files.isEmpty)
                 Divider()
                 Button("Rename Folder…", systemImage: "pencil") {
                     onRenameFolder()

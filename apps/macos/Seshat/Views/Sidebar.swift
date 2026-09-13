@@ -32,6 +32,10 @@ struct Sidebar: View {
     @State private var showErrorAlert = false
     @State private var showDeleteAlert = false
     @State private var deleteTarget: SidebarDeleteTarget?
+    @State private var shareFolder: LibraryFolder?
+    @State private var pendingShareFolder: LibraryFolder?
+    @State private var showSignIn = false
+    @Environment(AuthStore.self) private var authStore
 
     var body: some View {
         VStack(spacing: 0) {
@@ -127,6 +131,12 @@ struct Sidebar: View {
         .onChange(of: library.lastError) { _, error in
             showErrorAlert = error != nil
         }
+        .sheet(isPresented: $showSignIn, onDismiss: shareFolderAfterSignIn) {
+            SignInView()
+        }
+        .sheet(item: $shareFolder) { folder in
+            FolderShareSheet(folder: folder)
+        }
         .onChange(of: library.folders) { _, _ in
             syncImportDestination()
         }
@@ -163,6 +173,7 @@ struct Sidebar: View {
                         onDrop: { urls in handleDrop(urls, into: folder) },
                         onNewFileHere: { presentNewFile(into: folder.url) },
                         onImportHere: { presentImport(into: folder.url) },
+                        onShareFolder: { presentShare(folder: folder) },
                         onRenameFolder: { presentRename(folder: folder) },
                         onRevealFolder: { revealInFinder(folder.url) },
                         onDeleteFolder: { presentDelete(folder: folder) },
@@ -405,6 +416,23 @@ struct Sidebar: View {
             return
         }
         importDestinationFolderURL = library.folders.first?.url
+    }
+
+    /// Publishing needs an account, like the reader's Share button; the folder
+    /// waits in `pendingShareFolder` while the browser round-trip signs in.
+    private func presentShare(folder: LibraryFolder) {
+        if authStore.isAuthenticated {
+            shareFolder = folder
+        } else {
+            pendingShareFolder = folder
+            showSignIn = true
+        }
+    }
+
+    private func shareFolderAfterSignIn() {
+        defer { pendingShareFolder = nil }
+        guard authStore.isAuthenticated else { return }
+        shareFolder = pendingShareFolder
     }
 
     private func presentRename(file: LibraryFile) {

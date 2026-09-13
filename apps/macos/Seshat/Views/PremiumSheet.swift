@@ -11,7 +11,11 @@ struct PremiumSheet: View {
         var id: String { code }
 
         var title: String {
-            code == "copy_formats" ? "Copy As needs Seshat Premium" : "This link needs Seshat Premium"
+            switch code {
+            case "copy_formats": "Copy As needs Seshat Premium"
+            case "folder_site": "Sites need Seshat Premium"
+            default: "This link needs Seshat Premium"
+            }
         }
 
         var body: String {
@@ -20,6 +24,8 @@ struct PremiumSheet: View {
                 return "This document is above the free allowance and is read-only until you upgrade."
             case "copy_formats":
                 return "Copying as rich text or a Slack message is a Premium feature. Free accounts keep the reader and one share link."
+            case "folder_site":
+                return "Publishing a folder as a site, with a page tree and search, is a Premium feature. Free accounts keep the reader and one share link."
             default:
                 return "Free accounts include one permanent share link. Premium removes the limit."
             }

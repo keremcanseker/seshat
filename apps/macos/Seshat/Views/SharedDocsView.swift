@@ -73,7 +73,7 @@ struct SharedDocsView: View {
             List(docs) { doc in
                 SharedDocRow(
                     doc: doc,
-                    isDeleting: deleting.contains(doc.slug),
+                    isDeleting: deleting.contains(doc.id),
                     onOpen: { if let url = doc.publicURL { NSWorkspace.shared.open(url) } },
                     onCopy: { copy(doc) },
                     onDelete: { Task { await delete(doc) } }
@@ -92,8 +92,15 @@ struct SharedDocsView: View {
     private func load() async {
         loadState = .loading
         do {
-            let response: SharedDocsResponse = try await authStore.api.get("docs/me")
-            docs = response.documents
+            async let documents: SharedDocsResponse = authStore.api.get("docs/me")
+            async let sites: SharedSitesResponse = authStore.api.get("sites/me")
+            var rows = try await documents.documents
+            rows += try await sites.sites.map { site in
+                var site = site
+                site.isSite = true
+                return site
+            }
+            docs = rows.sorted { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
             loadState = .loaded
         } catch {
             loadState = .failed(error.localizedDescription)
@@ -107,11 +114,11 @@ struct SharedDocsView: View {
     }
 
     private func delete(_ doc: SharedDoc) async {
-        deleting.insert(doc.slug)
-        defer { deleting.remove(doc.slug) }
+        deleting.insert(doc.id)
+        defer { deleting.remove(doc.id) }
         do {
-            let _: EmptyResponse = try await authStore.api.delete("docs/\(doc.slug)")
-            docs.removeAll { $0.slug == doc.slug }
+            let _: EmptyResponse = try await authStore.api.delete("\(doc.apiPath)/\(doc.slug)")
+            docs.removeAll { $0.id == doc.id }
         } catch {
             loadState = .failed(error.localizedDescription)
         }
@@ -132,7 +139,7 @@ private struct SharedDocRow: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.seshatBodyText)
                     .lineLimit(1)
-                Text("seshat.page/d/\(doc.slug)")
+                Text("seshat.page/\(doc.publicPath)")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Color.seshatFaint)
                     .lineLimit(1)
