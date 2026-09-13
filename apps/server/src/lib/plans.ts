@@ -25,7 +25,10 @@ export type Quotas = {
   versions: number;
 };
 
-export const PLANS: Record<PlanId, { features: readonly FeatureKey[]; quotas: Quotas }> = {
+export const PLANS: Record<
+  PlanId,
+  { features: readonly FeatureKey[]; quotas: Quotas }
+> = {
   free: { features: [], quotas: { activeLinks: 1, versions: 0 } },
   premium: { features: FEATURES, quotas: { activeLinks: null, versions: 10 } },
 };
@@ -33,30 +36,69 @@ export const PLANS: Record<PlanId, { features: readonly FeatureKey[]; quotas: Qu
 export type Interval = "monthly" | "yearly";
 
 /** Amounts in minor units (cents). Polar product ids come from env; never sent to clients. */
-export const PRICING: Record<Interval, { amount: number; currency: string; polarProductId?: string }> = {
-  monthly: { amount: 699, currency: "USD", polarProductId: env.POLAR_PRODUCT_ID_MONTHLY },
-  yearly: { amount: 3999, currency: "USD", polarProductId: env.POLAR_PRODUCT_ID_YEARLY },
+export const PRICING: Record<
+  Interval,
+  { amount: number; currency: string; polarProductId?: string }
+> = {
+  monthly: {
+    amount: 699,
+    currency: "USD",
+    polarProductId: env.POLAR_PRODUCT_ID_MONTHLY,
+  },
+  yearly: {
+    amount: 3999,
+    currency: "USD",
+    polarProductId: env.POLAR_PRODUCT_ID_YEARLY,
+  },
 };
 
-export type DisplayFeature = { key: FeatureKey | string; label: string; available: boolean };
+export type DisplayFeature = {
+  key: FeatureKey | string;
+  label: string;
+  available: boolean;
+};
 
 /** Ordered rows for the pricing cards. `available: false` renders as "soon". */
 export const DISPLAY: Record<PlanId, DisplayFeature[]> = {
   free: [
-    { key: "reader", label: "The macOS reader, library and CLI", available: true },
+    {
+      key: "reader",
+      label: "The macOS reader, library and CLI",
+      available: true,
+    },
     { key: "vscode", label: "VS Code extension", available: true },
-    { key: "one_link", label: "1 permanent share link, updatable and deletable", available: true },
+    {
+      key: "one_link",
+      label: "1 permanent share link, updatable and deletable",
+      available: true,
+    },
   ],
   premium: [
     { key: "unlimited_links", label: "Unlimited share links", available: true },
+    { key: "custom_slug", label: "Custom link addresses", available: true },
+    {
+      key: "pdf_export",
+      label: "PDF export with smart pagination",
+      available: true,
+    },
+    { key: "view_count", label: "View counts", available: true },
+    {
+      key: "version_history",
+      label: "Version history, last 10 shares",
+      available: true,
+    },
+    {
+      key: "folder_site",
+      label: "Publish a folder as a site",
+      available: true,
+    },
+    {
+      key: "copy_formats",
+      label: "Copy as rich text for Slack and email",
+      available: true,
+    },
     { key: "expiring_links", label: "Expiring links", available: false },
     { key: "image_hosting", label: "Image hosting", available: false },
-    { key: "custom_slug", label: "Custom link addresses", available: true },
-    { key: "pdf_export", label: "PDF export with smart pagination", available: true },
-    { key: "view_count", label: "View counts", available: true },
-    { key: "version_history", label: "Version history, last 10 shares", available: true },
-    { key: "folder_site", label: "Publish a folder as a site", available: true },
-    { key: "copy_formats", label: "Copy as rich text for Slack and email", available: true },
   ],
 };
 
@@ -65,8 +107,14 @@ export function publicPlans() {
   return {
     plans: PLANS,
     pricing: {
-      monthly: { amount: PRICING.monthly.amount, currency: PRICING.monthly.currency },
-      yearly: { amount: PRICING.yearly.amount, currency: PRICING.yearly.currency },
+      monthly: {
+        amount: PRICING.monthly.amount,
+        currency: PRICING.monthly.currency,
+      },
+      yearly: {
+        amount: PRICING.yearly.amount,
+        currency: PRICING.yearly.currency,
+      },
     },
     display: DISPLAY,
   };
