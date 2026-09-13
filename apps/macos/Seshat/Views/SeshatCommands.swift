@@ -8,6 +8,7 @@ struct SeshatCommands: Commands {
 
     @FocusedValue(\.exportPDF) private var exportPDF
     @FocusedValue(\.printDocument) private var printDocument
+    @FocusedValue(\.copyDocument) private var copyDocument
     @FocusedValue(\.workspaceTabs) private var tabs
 
     var body: some Commands {
@@ -39,6 +40,15 @@ struct SeshatCommands: Commands {
             Button("Export as PDF…", action: exportFocusedDocument)
                 .keyboardShortcut("e", modifiers: [.command, .shift])
                 .disabled(exportPDF == nil)
+        }
+
+        CommandGroup(after: .pasteboard) {
+            Menu("Copy As") {
+                Button("Rich Text") { copyDocument?(.richText) }
+                    .keyboardShortcut("c", modifiers: [.command, .option])
+                Button("Slack Message") { copyDocument?(.slack) }
+            }
+            .disabled(copyDocument == nil)
         }
 
         CommandGroup(replacing: .printItem) {

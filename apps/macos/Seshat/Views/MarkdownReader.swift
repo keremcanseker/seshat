@@ -54,6 +54,7 @@ struct MarkdownReader: View {
         }
         .focusedSceneValue(\.exportPDF, exportAction)
         .focusedSceneValue(\.printDocument, printAction)
+        .focusedSceneValue(\.copyDocument, copyAction)
         .task(id: ReaderLoadKey(url: fileURL, tick: reloadTick)) {
             await load()
         }
@@ -243,6 +244,26 @@ struct MarkdownReader: View {
 
     private func startPrint() {
         Task { await printDocument() }
+    }
+
+    private var copyAction: (@MainActor (DocumentCopier.Format) -> Void)? {
+        canExport ? copyDocument : nil
+    }
+
+    private func copyDocument(as format: DocumentCopier.Format) {
+        Task {
+            // Same reasoning as share(): copy what is saved on disk, not a stale render.
+            await load()
+            guard loadError == nil, !rawContent.isEmpty else {
+                present(toast: .init(kind: .failure, message: "Couldn't read the file before copying."))
+                return
+            }
+            DocumentCopier.copy(rawContent, as: format)
+            present(toast: .init(
+                kind: .success,
+                message: format == .slack ? "Copied as a Slack message" : "Copied as rich text"
+            ))
+        }
     }
 
     private var outlineVisible: Bool {
