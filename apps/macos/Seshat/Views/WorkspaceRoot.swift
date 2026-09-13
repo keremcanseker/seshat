@@ -77,6 +77,21 @@ struct WorkspaceRoot: View {
                 Button("", action: tabs.activatePrevious)
                     .keyboardShortcut(.tab, modifiers: [.control, .shift])
             }
+            // Linear-style inset page: chrome (toolbar + sidebar) is one flat colour, the
+            // document sits in a bordered card with a thin gutter. Shadow on the shape, not
+            // the scroll view, so scrolling never re-rasterises the page.
+            .clipShape(.rect(cornerRadius: 8))
+            .background {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.seshatPaper)
+                    .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.seshatRuleStrong, lineWidth: 0.5)
+            }
+            .padding([.leading, .bottom, .trailing], 6)   // the toolbar's own inset is the top gap
+            .background(Color.seshatSidebarBg)
         }
         .navigationSplitViewStyle(.balanced)
         // The sidebar column is a translucent material, and it reaches up into the

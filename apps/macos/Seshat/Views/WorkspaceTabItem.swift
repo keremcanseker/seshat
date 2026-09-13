@@ -33,6 +33,12 @@ struct WorkspaceTabItem: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(isActive ? .isSelected : [])
         .background(pillColor, in: .rect(cornerRadius: 6))
+        .overlay {
+            if isActive {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.seshatRuleStrong, lineWidth: 0.5)
+            }
+        }
         .overlay(alignment: .trailing) {
             Button("Close \(title)", systemImage: "xmark", action: close)
                 .labelStyle(.iconOnly)
@@ -90,8 +96,11 @@ struct WorkspaceTabItem: View {
         }
     }
 
+    /// Inactive tabs are plain text on the chrome; the active one is a small card in the
+    /// same paper and hairline as the page below, so tab and page read as one sheet.
     private var pillColor: Color {
-        isActive || hovering ? Color.seshatRuleStrong.opacity(0.45) : .clear
+        if isActive { return .seshatPaper }
+        return hovering ? Color.seshatRuleStrong.opacity(0.35) : .clear
     }
 
     private var titleColor: Color {
