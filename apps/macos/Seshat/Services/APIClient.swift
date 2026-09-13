@@ -155,6 +155,8 @@ struct EmptyResponse: Decodable {}
 struct CreateDocBody: Encodable {
     let title: String
     let content: String
+    /// Premium custom address (KER-808). Omitted from the JSON when nil.
+    var slug: String? = nil
 }
 
 struct CreateDocResponse: Decodable {

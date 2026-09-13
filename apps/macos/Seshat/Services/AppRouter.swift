@@ -108,8 +108,8 @@ final class AppRouter {
             Task { await exportHeadless(source: source, to: output, landscape: landscape) }
             return
         }
-        if case .share(let source, let output) = action {
-            Task { await shareHeadless(source: source, to: output) }
+        if case .share(let source, let output, let slug) = action {
+            Task { await shareHeadless(source: source, to: output, slug: slug) }
             return
         }
         guard let openWindow else {
@@ -132,7 +132,7 @@ final class AppRouter {
 
     /// The `seshat share` path. Same contract as export: the URL lands in `output`,
     /// a failure in `<output>.error`.
-    private func shareHeadless(source: URL, to output: URL) async {
+    private func shareHeadless(source: URL, to output: URL, slug: String?) async {
         let errorFile = output.appendingPathExtension("error")
         do {
             guard authStore.isAuthenticated else {
@@ -152,7 +152,7 @@ final class AppRouter {
                     ])
                 }
                 url = try await SharePublisher.publish(
-                    fileURL: source, content: markdown, api: authStore.api
+                    fileURL: source, content: markdown, slug: slug, api: authStore.api
                 ).0.url
             }
             try Data(url.utf8).write(to: output, options: .atomic)
