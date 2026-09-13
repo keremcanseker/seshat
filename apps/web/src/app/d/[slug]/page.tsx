@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, permanentRedirect } from "next/navigation";
 import { SeshatDoc } from "@/components/seshat-doc";
 import { SeshatDocChrome } from "@/components/seshat-doc-chrome";
 import { SeshatMark } from "@/components/seshat-mark";
@@ -31,8 +32,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharedDocPage({ params }: Props) {
   const { slug } = await params;
-  const doc = await fetchSharedDoc(slug);
+  // First hop of x-forwarded-for is the reader; Traefik sets it on the way in.
+  const viewer = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const doc = await fetchSharedDoc(slug, viewer);
   if (!doc) notFound();
+  // A renamed document answers under its current slug (KER-808): 301 there.
+  if (doc.slug !== slug) permanentRedirect(`/d/${doc.slug}`);
 
   const outline = extractOutline(doc.content);
 

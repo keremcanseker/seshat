@@ -1,7 +1,7 @@
 import { and, count, eq, lt, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/client";
-import { documents, type User } from "../db/schema";
+import { documents, type Document, type User } from "../db/schema";
 import { env } from "../env";
 import { PLANS, type FeatureKey, type PlanId, type Quotas } from "./plans";
 import { overLimit } from "./rate-limit";
@@ -82,18 +82,14 @@ export async function assertCanCreateDocument(user: User): Promise<void> {
 
 /**
  * A free user may update only their oldest N documents (N = free quota);
- * anything newer is read-only until they upgrade. Missing docs fall through so
- * the caller's own 404 fires.
+ * anything newer is read-only until they upgrade.
  */
-export async function assertCanUpdateDocument(user: User, slug: string): Promise<void> {
+export async function assertCanUpdateDocument(
+  user: User,
+  doc: Pick<Document, "id" | "createdAt">,
+): Promise<void> {
   const limit = entitlementsFor(user).quotas.activeLinks;
   if (limit === null) return;
-  const [doc] = await db
-    .select({ id: documents.id, createdAt: documents.createdAt })
-    .from(documents)
-    .where(and(eq(documents.slug, slug), eq(documents.ownerId, user.id)))
-    .limit(1);
-  if (!doc) return;
   const [older] = await db
     .select({ n: count() })
     .from(documents)

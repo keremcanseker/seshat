@@ -11,6 +11,7 @@ import { meRoute } from "./routes/me";
 import { plansRoute } from "./routes/plans";
 import { releaseRoute } from "./routes/release";
 import { sitesRoute } from "./routes/sites";
+import { versionsRoute } from "./routes/versions";
 
 const app = new Hono();
 
@@ -32,6 +33,7 @@ app.get("/", (c) => c.json({ name: "seshat-server", version: "0.1.0" }));
 app.route("/health", healthRoute);
 app.route("/auth", authRoute);
 app.route("/docs", docsRoute);
+app.route("/docs", versionsRoute);
 app.route("/sites", sitesRoute);
 app.route("/plans", plansRoute);
 app.route("/me", meRoute);

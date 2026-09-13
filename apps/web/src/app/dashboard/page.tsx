@@ -89,7 +89,11 @@ export default async function DashboardPage({
 
         {me ? <PlanRow me={me} /> : null}
 
-        <DocList docs={items} />
+        <DocList
+          docs={items}
+          canRename={me?.features.includes("custom_slug") ?? false}
+          canSeeHistory={me?.features.includes("version_history") ?? false}
+        />
       </section>
     </main>
   );

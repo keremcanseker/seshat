@@ -13,9 +13,11 @@ usage:
   seshat global [<file.md>]   Open the workspace (opens the file as a tab if given)
   seshat export <file.md> [out.pdf] [--landscape]
                               Save a PDF (default: next to the file, same name)
-  seshat share <file.md|dir>  Publish to seshat.page, print and copy the link
+  seshat share <file.md|dir> [--slug name]
+                              Publish to seshat.page, print and copy the link
                               (re-sharing updates the link; a folder becomes
-                              a site with a page tree and search, Premium)
+                              a site with a page tree and search, Premium;
+                              --slug picks the address, Premium)
   seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)
   seshat help                 Show this message
 EOF
@@ -140,7 +142,18 @@ case "$cmd" in
         ;;
 
     share)
-        src="${1:-}"
+        src=""; slug=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --slug) shift; slug="${1:-}"
+                        [ -z "$slug" ] && { echo "seshat share: --slug needs a value" >&2; exit 1; } ;;
+                --slug=*) slug="${1#--slug=}" ;;
+                -*) echo "seshat share: unknown option '$1'" >&2; exit 1 ;;
+                *) if [ -z "$src" ]; then src="$1"; else
+                       echo "seshat share: too many arguments" >&2; exit 1; fi ;;
+            esac
+            shift
+        done
         if [ -z "$src" ]; then
             echo "seshat share: missing <file.md|dir>" >&2
             exit 1
@@ -149,11 +162,17 @@ case "$cmd" in
             echo "seshat: not found: $src" >&2
             exit 1
         fi
+        if [ -n "$slug" ] && [ -d "$src" ]; then
+            echo "seshat share: --slug applies to files, not folders" >&2
+            exit 1
+        fi
         src="$(abs_path "$src")"
         out="$(mktemp -t seshat-share)"
         rm -f "$out" "$out.error"
         started="$(date +%s)"
-        open_url "seshat://share?path=$(url_encode "$src")&out=$(url_encode "$out")"
+        query="path=$(url_encode "$src")&out=$(url_encode "$out")"
+        [ -n "$slug" ] && query="$query&slug=$(url_encode "$slug")"
+        open_url "seshat://share?$query"
         wait_for "$out" "$started" share
         link="$(cat "$out")"
         rm -f "$out"

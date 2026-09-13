@@ -7,7 +7,7 @@ export type Interval = "monthly" | "yearly";
 export type DisplayFeature = { key: string; label: string; available: boolean };
 
 export type Plans = {
-  plans: Record<PlanId, { features: string[]; quotas: { activeLinks: number | null } }>;
+  plans: Record<PlanId, { features: string[]; quotas: { activeLinks: number | null; versions: number } }>;
   pricing: Record<Interval, { amount: number; currency: string }>;
   display: Record<PlanId, DisplayFeature[]>;
 };

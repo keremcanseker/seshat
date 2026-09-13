@@ -20,7 +20,7 @@ const FAQ: FaqItem[] = [
   },
   {
     q: "What does Premium add?",
-    a: "Unlimited share links and PDF export today. Expiring links, custom slugs, image hosting, view counts and version history follow as they ship, at no extra cost.",
+    a: "Unlimited share links, custom link addresses and PDF export today. Expiring links, image hosting, view counts and version history follow as they ship, at no extra cost.",
   },
   {
     q: "Why is yearly so much cheaper?",

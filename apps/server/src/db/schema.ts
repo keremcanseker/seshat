@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
   "users",
@@ -43,6 +43,8 @@ export const documents = pgTable(
     ownerId: text("owner_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Views deduplicated per viewer per 24 h (KER-809). Counted for every plan, shown to Premium. */
+    views: integer("views").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .default(sql`now()`),
@@ -93,6 +95,50 @@ export const sitePages = pgTable(
     content: text("content").notNull(),
   },
   (t) => [uniqueIndex("site_pages_site_path_idx").on(t.siteId, t.path)],
+);
+
+// Every slug a document used to live at (KER-808). Rows are never freed while
+// the document exists, so an old link keeps redirecting and nobody can claim it.
+export const slugRedirects = pgTable("slug_redirects", {
+  slug: text("slug").primaryKey(),
+  documentId: text("document_id")
+    .notNull()
+    .references(() => documents.id, { onDelete: "cascade" }),
+});
+
+// Last time a hashed viewer opened a document (KER-809). One row per viewer per
+// document, so the table stays bounded; `documents.views` is the counter.
+export const documentViewers = pgTable(
+  "document_viewers",
+  {
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    viewer: text("viewer").notNull(),
+    seenAt: timestamp("seen_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [primaryKey({ columns: [t.documentId, t.viewer] })],
+);
+
+// What a document said before each re-share (KER-807, Premium `version_history`).
+// Only the newest `quotas.versions` rows survive; free plans store none.
+export const documentVersions = pgTable(
+  "document_versions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    /** When this content went live, i.e. the document's updatedAt at the time. */
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("document_versions_document_idx").on(t.documentId, t.createdAt)],
 );
 
 export type User = typeof users.$inferSelect;

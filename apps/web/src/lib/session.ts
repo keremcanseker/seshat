@@ -29,6 +29,8 @@ export type SharedDocSummary = {
   title: string;
   createdAt: string;
   updatedAt: string;
+  /** Present only for Premium accounts (KER-809). */
+  views?: number;
 };
 
 /** A doc (/d/) or a folder site (/s/) on the dashboard. */

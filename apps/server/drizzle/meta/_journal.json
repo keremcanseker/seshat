@@ -43,6 +43,27 @@
       "when": 1789309483708,
       "tag": "0005_marvelous_spitfire",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789310349898,
+      "tag": "0006_slug_redirects",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789310510861,
+      "tag": "0007_document_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789310631684,
+      "tag": "0008_version_history",
+      "breakpoints": true
     }
   ]
 }

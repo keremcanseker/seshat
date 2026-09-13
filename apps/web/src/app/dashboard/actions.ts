@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { deleteMyItem, getSessionToken } from "@/lib/auth";
+import { deleteMyItem, getSessionToken, renameMyDoc } from "@/lib/auth";
 import { SESHAT_API_BASE, SESSION_COOKIE } from "@/lib/session";
 
 /** Deletes one of the signed-in user's shared docs or sites, then refreshes the list. */
@@ -11,6 +11,19 @@ export async function deleteItemAction(kind: "doc" | "site", slug: string): Prom
   await deleteMyItem(kind, slug);
   revalidatePath("/dashboard");
 }
+
+/** Gives a shared doc a readable slug (Premium). Returns a message when the server refuses. */
+export async function renameDocAction(slug: string, wanted: string): Promise<{ error?: string }> {
+  const { error } = await renameMyDoc(slug, wanted);
+  if (error) return { error: RENAME_ERRORS[error] ?? "Could not rename this link." };
+  revalidatePath("/dashboard");
+  return {};
+}
+
+const RENAME_ERRORS: Record<string, string> = {
+  slug_taken: "That address is already taken.",
+  feature_required: "Custom addresses need Premium.",
+};
 
 /** Sends the user to their Polar customer portal to manage or cancel. */
 export async function portalAction(): Promise<void> {

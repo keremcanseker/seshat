@@ -9,13 +9,17 @@ export type SharedDoc = {
 const API_BASE =
   process.env.NEXT_PUBLIC_SESHAT_API ?? "https://api.seshat.page";
 
-export async function fetchSharedDoc(slug: string): Promise<SharedDoc | null> {
+/**
+ * `viewer` is the reader's IP; pass it only from the page render so the API
+ * counts a view (KER-809). Metadata and unfurl fetches leave it out.
+ */
+export async function fetchSharedDoc(slug: string, viewer?: string): Promise<SharedDoc | null> {
   const url = `${API_BASE}/docs/${encodeURIComponent(slug)}`;
   let response: Response;
   try {
     response = await fetch(url, {
       cache: "no-store",
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...(viewer ? { "x-seshat-viewer": viewer } : {}) },
     });
   } catch {
     return null;

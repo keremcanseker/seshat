@@ -114,6 +114,8 @@ After install, the CLI works from any terminal: `seshat open file.md`, `seshat g
 
 `seshat share ./docs/` (KER-811, Premium `folder_site`) takes the same route: a directory makes `shareHeadless` call `SitePublisher.publish`, which walks the folder for `.md` files (hidden dirs skipped, paths relative and extension-less) and sends the whole set to `POST/PUT /sites`; the server replaces every page on each publish. The web renders it at `/s/<slug>/<path>` with a page tree and client-side search (`site-sidebar.tsx`); relative `.md` links resolve to sibling pages through `SeshatDoc`'s `resolveHref`. No themes, no nav config: a folder of pamphlets with an index.
 
+Version history (KER-807, Premium `version_history`): a `PUT /docs/:slug` that changes the text first copies the old title/content into `document_versions` (`lib/versions.ts`, skipped on free plans and for unchanged re-shares), keeping the newest `quotas.versions` (10) per document. `GET /docs/:slug/versions`, `GET .../versions/:id` (raw `.md` download) and `POST .../versions/:id/restore` (archives the current text, so a restore is undoable) live in `routes/versions.ts`. The dashboard's clock icon opens `/dashboard/<slug>/history`; downloads proxy through `/api/versions/<slug>/<id>` so the session token stays server-side.
+
 ### Clean-state debug helper
 
 ```sh

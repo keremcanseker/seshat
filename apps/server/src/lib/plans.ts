@@ -21,11 +21,13 @@ export type PlanId = "free" | "premium";
 export type Quotas = {
   /** Max documents a user may create. null = unlimited. */
   activeLinks: number | null;
+  /** Earlier versions kept per document on re-share (KER-807). 0 = only the current one. */
+  versions: number;
 };
 
 export const PLANS: Record<PlanId, { features: readonly FeatureKey[]; quotas: Quotas }> = {
-  free: { features: [], quotas: { activeLinks: 1 } },
-  premium: { features: FEATURES, quotas: { activeLinks: null } },
+  free: { features: [], quotas: { activeLinks: 1, versions: 0 } },
+  premium: { features: FEATURES, quotas: { activeLinks: null, versions: 10 } },
 };
 
 export type Interval = "monthly" | "yearly";
@@ -49,10 +51,10 @@ export const DISPLAY: Record<PlanId, DisplayFeature[]> = {
     { key: "unlimited_links", label: "Unlimited share links", available: true },
     { key: "expiring_links", label: "Expiring links", available: false },
     { key: "image_hosting", label: "Image hosting", available: false },
-    { key: "custom_slug", label: "Custom slugs", available: false },
+    { key: "custom_slug", label: "Custom link addresses", available: true },
     { key: "pdf_export", label: "PDF export with smart pagination", available: true },
-    { key: "view_count", label: "View counts", available: false },
-    { key: "version_history", label: "Version history", available: false },
+    { key: "view_count", label: "View counts", available: true },
+    { key: "version_history", label: "Version history, last 10 shares", available: true },
     { key: "folder_site", label: "Publish a folder as a site", available: true },
     { key: "copy_formats", label: "Copy as rich text for Slack and email", available: false },
   ],

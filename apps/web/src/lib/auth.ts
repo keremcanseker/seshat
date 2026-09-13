@@ -90,6 +90,22 @@ export async function getMySites(): Promise<SharedDocSummary[]> {
 }
 
 /** Deletes one of the signed-in user's docs or sites. */
+/** Renames one of the signed-in user's docs via `PATCH /docs/:slug`. Returns an error code on 4xx. */
+export async function renameMyDoc(slug: string, wanted: string): Promise<{ error?: string }> {
+  const token = await getSessionToken();
+  if (!token) throw new Error("not authenticated");
+
+  const res = await fetch(`${SESHAT_API_BASE}/docs/${encodeURIComponent(slug)}`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify({ slug: wanted }),
+    cache: "no-store",
+  });
+  if (res.ok) return {};
+  const body = (await res.json().catch(() => ({}))) as { code?: string; error?: string };
+  return { error: body.code ?? body.error ?? `HTTP ${res.status}` };
+}
+
 export async function deleteMyItem(kind: "doc" | "site", slug: string): Promise<void> {
   const token = await getSessionToken();
   if (!token) throw new Error("not authenticated");
