@@ -56,7 +56,7 @@ export const DISPLAY: Record<PlanId, DisplayFeature[]> = {
     { key: "view_count", label: "View counts", available: true },
     { key: "version_history", label: "Version history, last 10 shares", available: true },
     { key: "folder_site", label: "Publish a folder as a site", available: true },
-    { key: "copy_formats", label: "Copy as rich text for Slack and email", available: false },
+    { key: "copy_formats", label: "Copy as rich text for Slack and email", available: true },
   ],
 };
 

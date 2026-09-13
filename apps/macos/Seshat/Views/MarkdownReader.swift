@@ -251,6 +251,11 @@ struct MarkdownReader: View {
     }
 
     private func copyDocument(as format: DocumentCopier.Format) {
+        // The menu stays enabled so the feature is discoverable; the wall is here (KER-814).
+        guard authStore.me?.has("copy_formats") == true else {
+            premiumPrompt = .init(code: "copy_formats", upgradeURL: nil)
+            return
+        }
         Task {
             // Same reasoning as share(): copy what is saved on disk, not a stale render.
             await load()

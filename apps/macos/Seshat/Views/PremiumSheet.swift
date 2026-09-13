@@ -10,10 +10,16 @@ struct PremiumSheet: View {
 
         var id: String { code }
 
+        var title: String {
+            code == "copy_formats" ? "Copy As needs Seshat Premium" : "This link needs Seshat Premium"
+        }
+
         var body: String {
             switch code {
             case "read_only_over_quota":
                 return "This document is above the free allowance and is read-only until you upgrade."
+            case "copy_formats":
+                return "Copying as rich text or a Slack message is a Premium feature. Free accounts keep the reader and one share link."
             default:
                 return "Free accounts include one permanent share link. Premium removes the limit."
             }
@@ -27,7 +33,7 @@ struct PremiumSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("This link needs Seshat Premium")
+            Text(prompt.title)
                 .font(.system(size: 17, weight: .semibold, design: .serif))
                 .foregroundStyle(Color.seshatHeading)
             Text(prompt.body)
