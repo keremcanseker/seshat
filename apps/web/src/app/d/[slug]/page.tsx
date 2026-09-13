@@ -14,12 +14,16 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const doc = await fetchSharedDoc(slug).catch(() => null);
+  // Every share link is a secret: never indexed, never followed, and the
+  // unfurl carries only the title. See KER-803.
+  const robots = "noindex, nofollow";
   if (!doc) {
-    return { title: "Document not found · Seshat" };
+    return { title: "Document not found · Seshat", robots };
   }
   return {
     title: `${doc.title} · Seshat`,
     description: "A markdown document shared with Seshat.",
+    robots,
     openGraph: { title: doc.title, type: "article", siteName: "Seshat" },
     twitter: { card: "summary", title: doc.title },
   };

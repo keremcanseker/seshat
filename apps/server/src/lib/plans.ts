@@ -5,7 +5,6 @@ import { env } from "../env";
 
 export const FEATURES = [
   "unlimited_links",
-  "private_links",
   "expiring_links",
   "image_hosting",
   "custom_slug",
@@ -14,7 +13,6 @@ export const FEATURES = [
   "view_count",
   "version_history",
   "folder_site",
-  "team_links",
   "copy_formats",
 ] as const;
 
@@ -50,7 +48,6 @@ export const DISPLAY: Record<PlanId, DisplayFeature[]> = {
   ],
   premium: [
     { key: "unlimited_links", label: "Unlimited share links", available: true },
-    { key: "private_links", label: "Private, password-protected and unlisted links", available: false },
     { key: "expiring_links", label: "Expiring links", available: false },
     { key: "image_hosting", label: "Image hosting", available: false },
     { key: "custom_slug", label: "Custom slugs", available: false },
@@ -59,7 +56,6 @@ export const DISPLAY: Record<PlanId, DisplayFeature[]> = {
     { key: "view_count", label: "View counts", available: false },
     { key: "version_history", label: "Version history", available: false },
     { key: "folder_site", label: "Publish a folder as a site", available: false },
-    { key: "team_links", label: "Team links", available: false },
     { key: "copy_formats", label: "Copy as rich text for Slack and email", available: false },
   ],
 };
