@@ -108,6 +108,10 @@ final class AppRouter {
             Task { await exportHeadless(source: source, to: output, landscape: landscape) }
             return
         }
+        if case .share(let source, let output) = action {
+            Task { await shareHeadless(source: source, to: output) }
+            return
+        }
         guard let openWindow else {
             pending.append(url)
             seshatLog("AppRouter.handle — not bound; queued: \(url)")
@@ -121,8 +125,36 @@ final class AppRouter {
             openInWorkspace(fileURL, openWindow: openWindow)
         case .openWorkspace(let fileURL):
             openInWorkspace(fileURL, openWindow: openWindow)
-        case .signInCallback, .exportPDF:
+        case .signInCallback, .exportPDF, .share:
             break
+        }
+    }
+
+    /// The `seshat share` path. Same contract as export: the URL lands in `output`,
+    /// a failure in `<output>.error`.
+    private func shareHeadless(source: URL, to output: URL) async {
+        let errorFile = output.appendingPathExtension("error")
+        do {
+            guard authStore.isAuthenticated else {
+                throw CocoaError(.userCancelled, userInfo: [
+                    NSLocalizedDescriptionKey: "Not signed in. Open Seshat and sign in first.",
+                ])
+            }
+            let markdown = try String(contentsOf: source, encoding: .utf8)
+            guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw CocoaError(.fileReadCorruptFile, userInfo: [
+                    NSLocalizedDescriptionKey: "Nothing to share, the file is empty.",
+                ])
+            }
+            let (response, _) = try await SharePublisher.publish(
+                fileURL: source, content: markdown, api: authStore.api
+            )
+            try Data(response.url.utf8).write(to: output, options: .atomic)
+            await authStore.refreshMe()
+            seshatLog("AppRouter.shareHeadless — \(response.url)")
+        } catch {
+            seshatLog("AppRouter.shareHeadless — failed: \(error.localizedDescription)")
+            try? Data(error.localizedDescription.utf8).write(to: errorFile)
         }
     }
 

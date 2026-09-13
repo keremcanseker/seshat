@@ -108,7 +108,9 @@ open "$(find ~/Library/Developer/Xcode/DerivedData -name 'Seshat.app' -path '*/D
 "$(...)/Seshat.app/Contents/Resources/seshat" install ~/.local/bin/seshat
 ```
 
-After install, the CLI works from any terminal: `seshat open file.md`, `seshat global file.md`, `seshat export file.md`, `seshat help`.
+After install, the CLI works from any terminal: `seshat open file.md`, `seshat global file.md`, `seshat export file.md`, `seshat share file.md`, `seshat help`.
+
+`seshat share` (KER-806) rides the export pattern: `seshat://share?path=…&out=…` → `AppRouter.shareHeadless` → `SharePublisher.publish` (same PUT/POST + `ShareStore` slug memory as the toolbar button) → URL written to `out`, error to `out.error`; the shell prints the link and `pbcopy`s it. Needs the app signed in. No MCP server: agents call the CLI.
 
 ### Clean-state debug helper
 

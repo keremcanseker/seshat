@@ -13,6 +13,8 @@ usage:
   seshat global [<file.md>]   Open the workspace (opens the file as a tab if given)
   seshat export <file.md> [out.pdf] [--landscape]
                               Save a PDF (default: next to the file, same name)
+  seshat share <file.md>      Publish to seshat.page, print and copy the link
+                              (re-sharing the same file updates its link)
   seshat install [target]     Symlink the CLI into PATH (default: /usr/local/bin/seshat)
   seshat help                 Show this message
 EOF
@@ -52,6 +54,26 @@ open_url() {
         *.app) open -a "$app" "$1" ;;
         *)     open "$1" ;;
     esac
+}
+
+# The app works in the background; wait for the file (or an error note) to land.
+# Usage: wait_for <out> <started-epoch> <verb>
+wait_for() {
+    tries=0
+    while [ "$tries" -lt 150 ]; do
+        if [ -f "$1.error" ]; then
+            echo "seshat: $(cat "$1.error")" >&2
+            rm -f "$1.error"
+            exit 1
+        fi
+        if [ -f "$1" ] && [ "$(stat -f %m "$1")" -ge "$2" ]; then
+            return 0
+        fi
+        sleep 0.2
+        tries=$((tries + 1))
+    done
+    echo "seshat: $3 timed out; is Seshat installed and allowed to open seshat:// links?" >&2
+    exit 1
 }
 
 cmd="${1:-}"
@@ -112,23 +134,30 @@ case "$cmd" in
         rm -f "$out.error"
         started="$(date +%s)"
         open_url "seshat://export?path=$(url_encode "$src")&out=$(url_encode "$out")&landscape=$landscape"
-        # The app renders in the background; wait for the file (or an error note) to land.
-        tries=0
-        while [ "$tries" -lt 150 ]; do
-            if [ -f "$out.error" ]; then
-                echo "seshat: $(cat "$out.error")" >&2
-                rm -f "$out.error"
-                exit 1
-            fi
-            if [ -f "$out" ] && [ "$(stat -f %m "$out")" -ge "$started" ]; then
-                echo "$out"
-                exit 0
-            fi
-            sleep 0.2
-            tries=$((tries + 1))
-        done
-        echo "seshat: export timed out; is Seshat installed and allowed to open seshat:// links?" >&2
-        exit 1
+        wait_for "$out" "$started" export
+        echo "$out"
+        ;;
+
+    share)
+        src="${1:-}"
+        if [ -z "$src" ]; then
+            echo "seshat share: missing <file.md>" >&2
+            exit 1
+        fi
+        if [ ! -f "$src" ]; then
+            echo "seshat: file not found: $src" >&2
+            exit 1
+        fi
+        src="$(abs_path "$src")"
+        out="$(mktemp -t seshat-share)"
+        rm -f "$out" "$out.error"
+        started="$(date +%s)"
+        open_url "seshat://share?path=$(url_encode "$src")&out=$(url_encode "$out")"
+        wait_for "$out" "$started" share
+        link="$(cat "$out")"
+        rm -f "$out"
+        printf %s "$link" | pbcopy
+        echo "$link"
         ;;
 
     install)

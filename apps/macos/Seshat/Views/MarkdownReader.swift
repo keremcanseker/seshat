@@ -300,7 +300,6 @@ struct MarkdownReader: View {
 
     private func share() async {
         guard !isSharing else { return }
-        let title = fileURL.deletingPathExtension().lastPathComponent
         // The file may have changed on disk since it was rendered (external editor);
         // the FSEvents watcher only refreshes the sidebar. Re-read so we publish
         // what's actually saved, and the reader catches up in the same step.
@@ -318,8 +317,9 @@ struct MarkdownReader: View {
         isSharing = true
         defer { isSharing = false }
         do {
-            let (response, wasUpdate) = try await publish(title: title, content: content)
-            ShareStore.setSlug(response.slug, for: fileURL)
+            let (response, wasUpdate) = try await SharePublisher.publish(
+                fileURL: fileURL, content: content, api: authStore.api
+            )
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(response.url, forType: .string)
             present(toast: .init(
@@ -401,22 +401,6 @@ struct MarkdownReader: View {
         } catch {
             present(toast: .init(kind: .failure, message: error.localizedDescription))
         }
-    }
-
-    /// Updates the existing document if this file was shared before (PUT), else
-    /// creates a new one (POST). Falls back to POST if the remembered doc is gone.
-    private func publish(title: String, content: String) async throws -> (CreateDocResponse, Bool) {
-        let body = CreateDocBody(title: title, content: content)
-        if let slug = ShareStore.slug(for: fileURL) {
-            do {
-                let response: CreateDocResponse = try await authStore.api.put("docs/\(slug)", body: body)
-                return (response, true)
-            } catch APIError.server(let status, _) where status == 404 {
-                ShareStore.removeSlug(for: fileURL)
-            }
-        }
-        let response: CreateDocResponse = try await authStore.api.post("docs", body: body)
-        return (response, false)
     }
 
     private func present(toast next: ShareToast) {

@@ -6,6 +6,8 @@ enum SeshatURLAction: Equatable {
     case signInCallback(token: String)
     /// `seshat export`: render `source` to `output` without showing a window.
     case exportPDF(source: URL, output: URL, landscape: Bool)
+    /// `seshat share`: publish `source` and write the public URL to `output`.
+    case share(source: URL, output: URL)
 }
 
 enum SeshatURL {
@@ -39,6 +41,12 @@ enum SeshatURL {
             else { return nil }
             let landscape = items.first(where: { $0.name == "landscape" })?.value == "1"
             return .exportPDF(source: source, output: output, landscape: landscape)
+        case "share":
+            let items = components?.queryItems ?? []
+            guard let source = items.first(where: { $0.name == "path" })?.value.flatMap(fileURL(from:)),
+                  let output = items.first(where: { $0.name == "out" })?.value.flatMap(fileURL(from:))
+            else { return nil }
+            return .share(source: source, output: output)
         case "auth":
             guard url.path == "/callback",
                   let token = token(fromFragment: components?.fragment)
