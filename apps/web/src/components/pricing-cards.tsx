@@ -85,18 +85,18 @@ export function PricingCards({ plans, signedIn, downloadHref }: Props) {
         </p>
         <div className="pricing-price pricing-swap" key={interval}>
           <span className="pricing-was" style={isYearly ? undefined : { visibility: "hidden" }}>
-            <s>{formatMoney(yearAtMonthly, cur)}</s>
+            <s>{formatMoney(monthly.amount, cur)}</s>
             <span className="pricing-badge">Save {savePct}%</span>
           </span>
           <span className="pricing-amount">
-            {formatMoney(isYearly ? yearly.amount : monthly.amount, cur)}
-            <span className="pricing-period">{isYearly ? "/ year" : "/ month"}</span>
+            {formatMoney(isYearly ? yearly.amount / 12 : monthly.amount, cur)}
+            <span className="pricing-period">/ month</span>
           </span>
         </div>
         <p className="pricing-permonth">
           {isYearly
-            ? `That is ${formatMoney(yearly.amount / 12, cur)} a month, billed once a year.`
-            : `${formatMoney(yearAtMonthly, cur)} a year. Yearly is ${formatMoney(yearly.amount, cur)}.`}
+            ? `${formatMoney(yearly.amount, cur)} billed once a year.`
+            : `Billed monthly. Yearly is ${formatMoney(yearly.amount / 12, cur)} a month.`}
         </p>
         <hr className="pricing-rule" />
         <Features items={plans.display.premium} />
