@@ -89,6 +89,10 @@ struct MarkdownReader: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollPosition(id: $scrolledSectionId, anchor: .top)
+        .environment(\.openURL, OpenURLAction { url in
+            open(link: url)
+            return .handled
+        })
         .background(Color.seshatPaper)
         .background {
             GeometryReader { geo in
@@ -292,6 +296,26 @@ struct MarkdownReader: View {
             isCurrent: section.id == currentMatchSectionId
         )
         .id(section.id)
+    }
+
+    /// Every link in the document goes to the default browser. MarkdownUI resolves
+    /// hrefs against the file's folder, so `#heading` and `www.x.com` arrive as
+    /// file URLs: the first scrolls in place, the second is sent to https.
+    private func open(link url: URL) {
+        let raw = url.baseURL == nil ? url.absoluteString : url.relativeString
+        if raw.hasPrefix("#") {
+            let id = String(raw.dropFirst())
+            if parsed.sections.contains(where: { $0.id == id }) {
+                withAnimation(.easeOut(duration: 0.28)) { scrolledSectionId = id }
+            }
+            return
+        }
+        if url.isFileURL, url.baseURL != nil, !FileManager.default.fileExists(atPath: url.path),
+           let web = URL(string: "https://\(raw)") {
+            NSWorkspace.shared.open(web)
+            return
+        }
+        NSWorkspace.shared.open(url)
     }
 
     private var trimmedQuery: String {

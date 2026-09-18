@@ -10,17 +10,22 @@ const components: Components = {
   h5: ({ node: _node, ...props }) => <h5 className="seshat-doc-h5" {...props} />,
   h6: ({ node: _node, ...props }) => <h6 className="seshat-doc-h6" {...props} />,
   p: ({ node: _node, ...props }) => <p className="seshat-doc-p" {...props} />,
-  a: ({ node: _node, href, children, ...rest }) => (
-    <a
-      className="seshat-doc-link"
-      href={href}
-      target={href?.startsWith("http") ? "_blank" : undefined}
-      rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
-      {...rest}
-    >
-      {children}
-    </a>
-  ),
+  a: ({ node: _node, href, children, ...rest }) => {
+    // `www.x.com` without a scheme would otherwise resolve against this page.
+    const url = href && /^www\./i.test(href) ? `https://${href}` : href;
+    const external = /^https?:\/\//i.test(url ?? "");
+    return (
+      <a
+        className="seshat-doc-link"
+        href={url}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noopener noreferrer" : undefined}
+        {...rest}
+      >
+        {children}
+      </a>
+    );
+  },
   ul: ({ node: _node, ...props }) => <ul className="seshat-doc-ul" {...props} />,
   ol: ({ node: _node, ...props }) => <ol className="seshat-doc-ol" {...props} />,
   li: ({ node: _node, ...props }) => <li className="seshat-doc-li" {...props} />,
