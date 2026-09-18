@@ -938,6 +938,7 @@ body:has(.seshat-doc-page)::-webkit-scrollbar {
   }
 
   .seshat-doc-link {
+    cursor: pointer;
     color: var(--link);
     text-decoration: underline;
     text-decoration-thickness: 0.5px;
