@@ -155,19 +155,21 @@ extension Theme {
             TaskMarker(isCompleted: configuration.isCompleted)
         }
         .table { configuration in
-            configuration.label
-                .fixedSize(horizontal: false, vertical: true)
-                .markdownTableBorderStyle(
-                    .init(.horizontalBorders, color: .seshatRuleStrong, width: 0.5)
-                )
-                .markdownTableBackgroundStyle(
-                    .alternatingRows(
-                        Color.clear,
-                        Color.seshatBgSubtle.opacity(0.5),
-                        header: Color.clear
+            ScrollView(.horizontal) {
+                configuration.label
+                    .fixedSize(horizontal: false, vertical: true)
+                    .markdownTableBorderStyle(
+                        .init(.horizontalBorders, color: .seshatRuleStrong, width: 0.5)
                     )
-                )
-                .markdownMargin(top: 24, bottom: 24)
+                    .markdownTableBackgroundStyle(
+                        .alternatingRows(
+                            Color.clear,
+                            Color.seshatBgSubtle.opacity(0.5),
+                            header: Color.clear
+                        )
+                    )
+            }
+            .markdownMargin(top: 24, bottom: 24)
         }
         .tableCell { configuration in
             configuration.label
@@ -195,7 +197,6 @@ extension Theme {
 
 enum Seshat {
     static let proseWidth: CGFloat = 720
-    static let contentWidth: CGFloat = 920
 }
 
 private struct BulletMarker: View {

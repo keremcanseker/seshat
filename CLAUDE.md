@@ -148,7 +148,7 @@ macOS window restoration aggressively re-opens windows on relaunch, masking bugs
 - `MarkdownParser` walks the source line-by-line, tracks fenced code blocks, extracts ATX headings, and **splits the doc into sections each anchored at a heading**. Sections get slug IDs.
 - `MarkdownReader` renders each section as a separate `Markdown(...)` view in a `VStack(spacing: 28)`. Each section view has `.id(section.id)` so `ScrollViewProxy.scrollTo(_:anchor:)` lands precisely on a heading.
 - `SeshatTheme` extends `MarkdownUI.Theme`. Must be `@MainActor` because `Theme` isn't Sendable.
-- Layout strategy: outer content area at 920pt, prose blocks (paragraph/heading/blockquote/listItem) clamped to 720pt left-aligned, code blocks unclamped so they extend wider — that's the "code blocks breathe" effect.
+- Layout strategy: one centered 720pt column (`Seshat.proseWidth`) for everything; code blocks longer than that scroll horizontally inside themselves instead of widening the page.
 
 **Empty-window cleanup (currently buggy — see Known issues)**
 

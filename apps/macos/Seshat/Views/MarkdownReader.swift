@@ -85,7 +85,7 @@ struct MarkdownReader: View {
             .scrollTargetLayout()
             .padding(.horizontal, 32)
             .padding(.vertical, 64)
-            .frame(maxWidth: Seshat.contentWidth, alignment: .leading)
+            .frame(maxWidth: Seshat.proseWidth + 64, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollPosition(id: $scrolledSectionId, anchor: .top)
