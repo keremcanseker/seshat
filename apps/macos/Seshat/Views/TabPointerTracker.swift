@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Hover and middle-click for a tab. SwiftUI's `onHover` never fires inside a toolbar item and
-/// there is no middle-button gesture, so an AppKit tracking area does both. `hitTest` only
+/// Hover and middle-click for a tab. SwiftUI has no middle-button gesture, so an AppKit
+/// tracking area does both (hover too, since it is there anyway). `hitTest` only
 /// claims middle-button events; left clicks and tooltips still reach the SwiftUI view beneath.
 struct TabPointerTracker: NSViewRepresentable {
     let onHover: (Bool) -> Void

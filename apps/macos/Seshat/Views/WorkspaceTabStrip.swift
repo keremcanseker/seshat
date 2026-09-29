@@ -1,34 +1,54 @@
 import SwiftUI
 
-/// Toolbar tabs, Linear-style. Every tab has the same width; as tabs come and go they share
-/// the room the detail column has left after the toolbar's own actions, browser-like, between
-/// `minTabWidth` and `maxTabWidth`. Content-sized on purpose: NSToolbar sizes the item from
-/// its ideal width and cannot stretch it, so the strip must already be the right size.
+/// One pane's tabs, above its page. Every tab has the same width; as tabs come and go they
+/// share the pane's width between `minTabWidth` and `maxTabWidth`, browser-like. A strip that
+/// still overflows (a narrow split pane) scrolls sideways and keeps the active tab in view.
 struct WorkspaceTabStrip: View {
     let tabs: WorkspaceTabs
-    /// Width of the detail column; the strip keeps `reserved` of it for the toolbar's actions.
-    let availableWidth: Double
+    /// Only the focused pane's active tab reads as the current document.
+    let isFocused: Bool
     let onRevealInSidebar: (URL) -> Void
+    let onOpenToSide: (URL) -> Void
+    /// A tab dropped on one of these tabs lands before it; true when it was taken.
+    let onDropTab: (WorkspaceTabDrag, URL) -> Bool
     /// Files dragged in from the sidebar (or Finder) open as permanent tabs.
     let onDropFiles: ([URL]) -> Void
 
     @State private var dropTargeted = false
+    @State private var width = 0.0
 
     private static let maxTabWidth = 180.0
     private static let minTabWidth = 72.0
     private static let spacing = 2.0
-    /// Trailing actions (~300) plus what NSToolbar keeps for margins and overflow (~150).
-    private static let reserved = 480.0
+    /// A little empty strip after the last tab to drop onto.
+    private static let trailingRoom = 24.0
 
     var body: some View {
-        HStack(spacing: Self.spacing) {
-            ForEach(tabs.tabs, id: \.self) { url in
-                WorkspaceTabItem(url: url, width: tabWidth, tabs: tabs, onRevealInSidebar: onRevealInSidebar)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                HStack(spacing: Self.spacing) {
+                    ForEach(tabs.tabs, id: \.self) { url in
+                        WorkspaceTabItem(
+                            url: url,
+                            width: tabWidth,
+                            tabs: tabs,
+                            isPaneFocused: isFocused,
+                            onRevealInSidebar: onRevealInSidebar,
+                            onOpenToSide: onOpenToSide,
+                            onDropTab: { onDropTab($0, url) }
+                        )
+                    }
+                }
+                .padding(.trailing, Self.trailingRoom)
+                .frame(height: 28)
+            }
+            .scrollIndicators(.never)
+            .onChange(of: tabs.active) { _, active in
+                guard let active else { return }
+                withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(active) }
             }
         }
-        .padding(.trailing, 24)   // a little empty strip to drop onto after the last tab
-        .frame(height: 28)
-        .fixedSize()
+        .onGeometryChange(for: Double.self) { $0.size.width } action: { width = $0 }
         .background(dropTargeted ? Color.seshatAccentSoft.opacity(0.2) : .clear, in: .rect(cornerRadius: 6))
         .dropDestination(for: URL.self) { urls, _ in
             let files = urls.filter { Library.markdownExtensions.contains($0.pathExtension.lowercased()) }
@@ -44,7 +64,7 @@ struct WorkspaceTabStrip: View {
 
     private var tabWidth: Double {
         let count = Double(max(tabs.tabs.count, 1))
-        let room = availableWidth - Self.reserved - Self.spacing * (count - 1)
+        let room = width - Self.trailingRoom - Self.spacing * (count - 1)
         return min(Self.maxTabWidth, max(Self.minTabWidth, room / count))
     }
 }

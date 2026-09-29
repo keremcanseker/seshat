@@ -10,6 +10,8 @@ struct Sidebar: View {
     /// New file and import open a permanent tab instead of reusing the preview. (A double-click
     /// gesture on rows would swallow `List`'s single-click and arrow-key selection.)
     var onOpenPermanently: (URL) -> Void = { _ in }
+    var onOpenToSide: (URL) -> Void = { _ in }
+    var onOpenInCurrentTab: (URL) -> Void = { _ in }
     @Environment(ReadState.self) private var readState
     var onRefresh: () -> Void = {}
     var onRevealLibrary: () -> Void = {}
@@ -284,6 +286,16 @@ struct Sidebar: View {
 
     @ViewBuilder
     private func fileContextMenu(file: LibraryFile, currentFolder: LibraryFolder) -> some View {
+        Button("Open in Current Tab", systemImage: "arrow.left.arrow.right") {
+            onOpenInCurrentTab(file.url)
+        }
+
+        Button("Open to the Side", systemImage: "rectangle.split.2x1") {
+            onOpenToSide(file.url)
+        }
+
+        Divider()
+
         Button("New File…", systemImage: "doc.badge.plus") {
             presentNewFile(into: currentFolder.url)
         }

@@ -1,32 +1,28 @@
 import Foundation
 
-/// The workspace's open documents in strip order, plus the active one. Persists to
-/// UserDefaults on every mutation, like `ReadState`; window restoration is off, so this
-/// is the only memory of tabs across launches. `active` is nil exactly when `tabs` is empty.
+/// One pane's open documents in strip order, plus its active one: a VS Code editor group.
+/// `WorkspacePanes` owns the panes, persists them and keeps one reopen stack for all of them.
+/// `active` is nil exactly when `tabs` is empty.
 @Observable
 @MainActor
-final class WorkspaceTabs {
-    static let tabsKey = "SeshatWorkspaceTabs"
-    static let activeKey = "SeshatWorkspaceActiveTab"
-    /// Past this the leftmost inactive tab makes room, so the strip never has to scroll.
+final class WorkspaceTabs: Identifiable {
+    /// Past this the leftmost inactive tab makes room.
     static let maxTabs = 10
-    private static let reopenLimit = 20
 
+    let id = UUID()
     private(set) var tabs: [URL] = []
     private(set) var active: URL?
     private(set) var missing: Set<URL> = []
     /// The one tab a sidebar click reuses (VS Code's italic preview). Not persisted: after a
     /// relaunch every restored tab is permanent.
     private(set) var preview: URL?
-    private var closed: [(url: URL, index: Int)] = []
+    /// Hears about every close (for ⌘⇧T) and every change (to persist, and to drop an emptied pane).
+    @ObservationIgnored weak var owner: WorkspacePanes?
 
-    private let defaults: UserDefaults
-
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        let stored = defaults.array(forKey: Self.tabsKey) as? [String] ?? []
+    /// Restores stored paths, skipping duplicates and files that no longer exist.
+    init(paths: [String] = [], active activePath: String? = nil) {
         var restored: [URL] = []
-        for path in stored {
+        for path in paths {
             let url = URL(fileURLWithPath: path).seshatNormalized
             guard !restored.contains(where: { $0.seshatMatches(url) }) else { continue }
             guard FileManager.default.fileExists(atPath: url.path) else {
@@ -36,22 +32,23 @@ final class WorkspaceTabs {
             restored.append(url)
         }
         tabs = restored
-        let storedActive = defaults.string(forKey: Self.activeKey)
-            .map { URL(fileURLWithPath: $0).seshatNormalized }
-        active = storedActive.flatMap { wanted in restored.first { $0.seshatMatches(wanted) } } ?? restored.first
-        seshatLog("WorkspaceTabs.init — restored \(restored.count) tab(s), active=\(active?.lastPathComponent ?? "nil")")
+        let wanted = activePath.map { URL(fileURLWithPath: $0).seshatNormalized }
+        active = wanted.flatMap { wanted in restored.first { $0.seshatMatches(wanted) } } ?? restored.first
     }
 
     var isEmpty: Bool { tabs.isEmpty }
     var canGoPrevious: Bool { (activeIndex ?? 0) > 0 }
     var canGoNext: Bool { activeIndex.map { $0 < tabs.count - 1 } ?? false }
-    var canReopen: Bool { !closed.isEmpty }
 
     func isActive(_ url: URL) -> Bool { active?.seshatMatches(url) == true }
     func isMissing(_ url: URL) -> Bool { missing.contains(url.seshatNormalized) }
     func isPreview(_ url: URL) -> Bool { preview?.seshatMatches(url) == true }
 
-    /// "folder › name" while another open tab shares the name.
+    func index(of url: URL) -> Int? {
+        tabs.firstIndex { $0.seshatMatches(url) }
+    }
+
+    /// "folder › name" while another tab in this pane shares the name.
     func title(for url: URL) -> String {
         let name = url.deletingPathExtension().lastPathComponent
         let shared = tabs.contains {
@@ -77,15 +74,47 @@ final class WorkspaceTabs {
             noteMissing(target)
             seshatLog("WorkspaceTabs.open — preview \(target.lastPathComponent)")
         } else {
-            if tabs.count >= Self.maxTabs, let evicted = tabs.first(where: { !isActive($0) }) {
-                close(evicted)
-            }
+            makeRoom()
             tabs.append(target)
             active = target
             if asPreview { preview = target }
             noteMissing(target)
             seshatLog("WorkspaceTabs.open — \(target.lastPathComponent) (\(tabs.count) open)")
         }
+        commit()
+    }
+
+    /// ⌘-click: the active tab shows `url` instead of opening another. The document it held
+    /// goes on the reopen stack like a closed tab. An already open file is just activated.
+    func replaceActive(with url: URL) {
+        let target = url.seshatNormalized
+        guard let active, let index = index(of: active), self.index(of: target) == nil else {
+            open(target)
+            return
+        }
+        owner?.paneDidClose(active, at: index, in: self)
+        tabs[index] = target
+        missing.remove(active)
+        if isPreview(active) { preview = nil }
+        self.active = target
+        noteMissing(target)
+        seshatLog("WorkspaceTabs.replaceActive — \(active.lastPathComponent) → \(target.lastPathComponent)")
+        commit()
+    }
+
+    /// Puts `url` at `index` (clamped) as a permanent, active tab: a reopened tab, or one
+    /// dragged in from another pane. An already open tab is just activated where it is.
+    func insert(_ url: URL, at index: Int) {
+        let target = url.seshatNormalized
+        if let existing = self.index(of: target) {
+            activate(index: existing)
+            return
+        }
+        makeRoom()
+        tabs.insert(target, at: min(index, tabs.count))
+        active = target
+        noteMissing(target)
+        seshatLog("WorkspaceTabs.insert — \(target.lastPathComponent) at \(index)")
         commit()
     }
 
@@ -123,16 +152,12 @@ final class WorkspaceTabs {
 
     /// Closing the active tab activates its right neighbour, or the left one at the end.
     func close(_ url: URL) {
-        guard let index = index(of: url) else { return }
-        let removed = tabs.remove(at: index)
-        missing.remove(removed)
-        if isPreview(removed) { preview = nil }
-        pushClosed(removed, at: index)
-        if active?.seshatMatches(removed) == true {
-            active = tabs.indices.contains(index) ? tabs[index] : tabs.last
-        }
-        seshatLog("WorkspaceTabs.close — \(removed.lastPathComponent) (\(tabs.count) open)")
-        commit()
+        remove(url, reopenable: true)
+    }
+
+    /// Leaves without a reopen entry: the tab moved to another pane.
+    func detach(_ url: URL) {
+        remove(url, reopenable: false)
     }
 
     func closeOthers(_ url: URL) {
@@ -163,21 +188,6 @@ final class WorkspaceTabs {
         }
     }
 
-    /// Most recently closed first, back at its former index clamped to the current count.
-    func reopenLast() {
-        guard let last = closed.popLast() else { return }
-        if let existing = index(of: last.url) {
-            activate(index: existing)
-            return
-        }
-        let index = min(last.index, tabs.count)
-        tabs.insert(last.url, at: index)
-        active = last.url
-        noteMissing(last.url)
-        seshatLog("WorkspaceTabs.reopenLast — \(last.url.lastPathComponent) at \(index)")
-        commit()
-    }
-
     // MARK: Reordering and disk changes
 
     func move(from source: Int, to destination: Int) {
@@ -191,21 +201,11 @@ final class WorkspaceTabs {
     /// A file remaps its own tab; a folder remaps every tab under it. Two tabs landing on
     /// the same URL merge into one.
     func remap(from oldURL: URL, to newURL: URL) {
-        let old = oldURL.seshatNormalized
-        let new = newURL.seshatNormalized
-        guard !old.seshatMatches(new) else { return }
-
-        func mapped(_ url: URL) -> URL? {
-            if url.seshatMatches(old) { return new }
-            guard url.seshatHasPathPrefix(of: old) else { return nil }
-            let relative = url.pathComponents.dropFirst(old.pathComponents.count)
-            return relative.reduce(new) { $0.appendingPathComponent($1) }.seshatNormalized
-        }
-
+        guard !oldURL.seshatMatches(newURL) else { return }
         var result: [URL] = []
         var changed = false
         for url in tabs {
-            let target = mapped(url) ?? url
+            let target = url.seshatRemapped(from: oldURL, to: newURL) ?? url
             if target != url { changed = true }
             if result.contains(where: { $0.seshatMatches(target) }) {
                 changed = true
@@ -215,15 +215,14 @@ final class WorkspaceTabs {
         }
         guard changed else { return }
         tabs = result
-        if let active, let target = mapped(active) {
+        if let active, let target = active.seshatRemapped(from: oldURL, to: newURL) {
             self.active = target
         }
-        if let preview, let target = mapped(preview) {
+        if let preview, let target = preview.seshatRemapped(from: oldURL, to: newURL) {
             self.preview = target
         }
-        closed = closed.map { (mapped($0.url) ?? $0.url, $0.index) }
         refreshMissing()
-        seshatLog("WorkspaceTabs.remap — \(old.lastPathComponent) → \(new.lastPathComponent)")
+        seshatLog("WorkspaceTabs.remap — \(oldURL.lastPathComponent) → \(newURL.lastPathComponent)")
         commit()
     }
 
@@ -235,20 +234,28 @@ final class WorkspaceTabs {
 
     private var activeIndex: Int? { active.flatMap(index(of:)) }
 
-    private func index(of url: URL) -> Int? {
-        tabs.firstIndex { $0.seshatMatches(url) }
+    private func remove(_ url: URL, reopenable: Bool) {
+        guard let index = index(of: url) else { return }
+        let removed = tabs.remove(at: index)
+        missing.remove(removed)
+        if isPreview(removed) { preview = nil }
+        if reopenable { owner?.paneDidClose(removed, at: index, in: self) }
+        if active?.seshatMatches(removed) == true {
+            active = tabs.indices.contains(index) ? tabs[index] : tabs.last
+        }
+        seshatLog("WorkspaceTabs.\(reopenable ? "close" : "detach") — \(removed.lastPathComponent) (\(tabs.count) open)")
+        commit()
+    }
+
+    private func makeRoom() {
+        if tabs.count >= Self.maxTabs, let evicted = tabs.first(where: { !isActive($0) }) {
+            close(evicted)
+        }
     }
 
     private func noteMissing(_ url: URL) {
         if !FileManager.default.fileExists(atPath: url.path) {
             missing.insert(url)
-        }
-    }
-
-    private func pushClosed(_ url: URL, at index: Int) {
-        closed.append((url, index))
-        if closed.count > Self.reopenLimit {
-            closed.removeFirst(closed.count - Self.reopenLimit)
         }
     }
 
@@ -261,7 +268,6 @@ final class WorkspaceTabs {
             assertionFailure("WorkspaceTabs: tabs open but none active")
             active = first
         }
-        defaults.set(tabs.map(\.path), forKey: Self.tabsKey)
-        defaults.set(active?.path, forKey: Self.activeKey)
+        owner?.paneDidChange(self)
     }
 }

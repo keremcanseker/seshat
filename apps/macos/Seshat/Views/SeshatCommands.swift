@@ -9,7 +9,7 @@ struct SeshatCommands: Commands {
     @FocusedValue(\.exportPDF) private var exportPDF
     @FocusedValue(\.printDocument) private var printDocument
     @FocusedValue(\.copyDocument) private var copyDocument
-    @FocusedValue(\.workspaceTabs) private var tabs
+    @FocusedValue(\.workspacePanes) private var panes
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
@@ -69,24 +69,30 @@ struct SeshatCommands: Commands {
             Divider()
 
             Button("Previous Tab") {
-                tabs?.activatePrevious()
+                panes?.focused.activatePrevious()
             }
             .keyboardShortcut("[", modifiers: [.command, .shift])
-            .disabled(tabs?.canGoPrevious != true)
+            .disabled(panes?.focused.canGoPrevious != true)
 
             Button("Next Tab") {
-                tabs?.activateNext()
+                panes?.focused.activateNext()
             }
             .keyboardShortcut("]", modifiers: [.command, .shift])
-            .disabled(tabs?.canGoNext != true)
+            .disabled(panes?.focused.canGoNext != true)
 
             // ⌘W itself is caught by the workspace window (WorkspaceRootContainer), ahead of
             // the system Close item, which stays for closing the window when no tab is open.
             Button("Reopen Closed Tab") {
-                tabs?.reopenLast()
+                panes?.reopenLast()
             }
             .keyboardShortcut("t", modifiers: [.command, .shift])
-            .disabled(tabs?.canReopen != true)
+            .disabled(panes?.canReopen != true)
+
+            Button("Split Right") {
+                panes?.split()
+            }
+            .keyboardShortcut("\\", modifiers: .command)
+            .disabled(panes?.canSplit != true)
         }
 
         CommandGroup(after: .help) {

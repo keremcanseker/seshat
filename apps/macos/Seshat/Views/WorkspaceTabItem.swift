@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// One tab pill in the toolbar at the width the strip hands it. A title that does not fit
+/// One tab pill in a pane's tab row at the width the strip hands it. A title that does not fit
 /// fades out at the trailing edge; the ⨯ sits in that fade on hover or keyboard focus and
 /// is always in the accessibility tree.
 struct WorkspaceTabItem: View {
     let url: URL
     let width: Double
     let tabs: WorkspaceTabs
+    let isPaneFocused: Bool
     let onRevealInSidebar: (URL) -> Void
+    let onOpenToSide: (URL) -> Void
+    let onDropTab: (WorkspaceTabDrag) -> Bool
 
     @State private var hovering = false
     @State private var dropTargeted = false
@@ -36,7 +39,7 @@ struct WorkspaceTabItem: View {
         .overlay {
             if isActive {
                 RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(Color.seshatRuleStrong, lineWidth: 0.5)
+                    .strokeBorder(isPaneFocused ? Color.seshatRuleStrong : Color.seshatRule, lineWidth: 0.5)
             }
         }
         .overlay(alignment: .trailing) {
@@ -63,14 +66,16 @@ struct WorkspaceTabItem: View {
         .animation(.easeOut(duration: 0.12), value: hovering)
         .simultaneousGesture(TapGesture(count: 2).onEnded { tabs.pin(url) })
         .help(url.path)
-        .draggable(WorkspaceTabDrag(url: url)) {
+        .draggable(WorkspaceTabDrag(url: url, pane: tabs.id)) {
             FileDragPreview(name: title)
         }
         .dropDestination(for: WorkspaceTabDrag.self) { items, _ in
             guard let dragged = items.first else { return false }
-            return reorder(dragged.url)
+            return onDropTab(dragged)
         } isTargeted: { dropTargeted = $0 }
         .contextMenu {
+            Button("Open to the Side") { onOpenToSide(url) }
+            Divider()
             Button("Close", action: close)
             Button("Close Others") { tabs.closeOthers(url) }
                 .disabled(tabs.tabs.count < 2)
@@ -97,15 +102,16 @@ struct WorkspaceTabItem: View {
     }
 
     /// Inactive tabs are plain text on the chrome; the active one is a small card in the
-    /// same paper and hairline as the page below, so tab and page read as one sheet.
+    /// same paper and hairline as the page below, so tab and page read as one sheet. In a
+    /// pane without focus that card is faded, so the focused document stands out.
     private var pillColor: Color {
-        if isActive { return .seshatPaper }
+        if isActive { return isPaneFocused ? .seshatPaper : .seshatPaper.opacity(0.5) }
         return hovering ? Color.seshatRuleStrong.opacity(0.35) : .clear
     }
 
     private var titleColor: Color {
         if tabs.isMissing(url) { return .seshatFaint }
-        return isActive || hovering ? .seshatBodyText : .seshatMuted
+        return (isActive && isPaneFocused) || hovering ? .seshatBodyText : .seshatMuted
     }
 
     private func activate() {
@@ -114,14 +120,6 @@ struct WorkspaceTabItem: View {
 
     private func close() {
         tabs.close(url)
-    }
-
-    private func reorder(_ dragged: URL) -> Bool {
-        guard let from = tabs.tabs.firstIndex(where: { $0.seshatMatches(dragged) }),
-              let to = tabs.tabs.firstIndex(where: { $0.seshatMatches(url) }),
-              from != to else { return false }
-        tabs.move(from: from, to: to)
-        return true
     }
 
     private func showInFinder() {

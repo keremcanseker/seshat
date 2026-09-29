@@ -2,7 +2,7 @@ import SwiftUI
 
 struct WorkspaceRoot: View {
     let library: Library
-    let tabs: WorkspaceTabs
+    let panes: WorkspacePanes
     @State private var reloadTick: Int = 0
     @State private var columns: NavigationSplitViewVisibility = .all
     @State private var collapsedFolders: Set<URL> = []
@@ -11,15 +11,24 @@ struct WorkspaceRoot: View {
     @Environment(AppRouter.self) private var router
     @Environment(ReadState.self) private var readState
 
-    /// Sidebar highlight == active tab. A row click opens a preview tab (⌘-click a permanent
-    /// one). `List` writes nil on empty-area clicks; ignored, tabs close explicitly.
+    /// Sidebar highlight == the focused pane's active tab. A row click opens a new tab there,
+    /// ⌘-click swaps the document in the current tab, ⌥-click opens it in the pane beside
+    /// (VS Code's open to the side). Arrow keys browse through one reused preview tab, so
+    /// walking the list never piles up tabs. `List` writes nil on empty-area clicks; ignored,
+    /// tabs close explicitly.
     private var selection: Binding<URL?> {
         Binding(
-            get: { tabs.active },
+            get: { panes.focused.active },
             set: { url in
                 guard let url else { return }
-                let permanent = NSEvent.modifierFlags.contains(.command)
-                tabs.open(url, asPreview: !permanent)
+                let flags = NSEvent.modifierFlags
+                if flags.contains(.option) {
+                    panes.openToSide(url)
+                } else if flags.contains(.command) {
+                    panes.focused.replaceActive(with: url)
+                } else {
+                    panes.focused.open(url, asPreview: NSApp.currentEvent?.type == .keyDown)
+                }
             }
         )
     }
@@ -31,7 +40,9 @@ struct WorkspaceRoot: View {
                 selection: selection,
                 collapsedFolders: $collapsedFolders,
                 revealTick: revealTick,
-                onOpenPermanently: { tabs.open($0) },
+                onOpenPermanently: { panes.focused.open($0) },
+                onOpenToSide: { panes.openToSide($0) },
+                onOpenInCurrentTab: { panes.focused.replaceActive(with: $0) },
                 onRefresh: refresh,
                 onRevealLibrary: revealLibrary,
                 onURLRenamed: handleFileURLChange,
@@ -43,52 +54,35 @@ struct WorkspaceRoot: View {
             .toolbar(removing: .sidebarToggle)
             .toolbar {
                 if #available(macOS 26, *) {
-                    ToolbarItemGroup(placement: .automatic) { sidebarToggle; WorkspaceTabNavButtons(tabs: tabs) }
+                    ToolbarItemGroup(placement: .automatic) { sidebarToggle; WorkspaceTabNavButtons(tabs: panes.focused) }
                         .sharedBackgroundVisibility(.hidden)
                 } else {
-                    ToolbarItemGroup(placement: .automatic) { sidebarToggle; WorkspaceTabNavButtons(tabs: tabs) }
+                    ToolbarItemGroup(placement: .automatic) { sidebarToggle; WorkspaceTabNavButtons(tabs: panes.focused) }
                 }
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 360)
         } detail: {
-            Group {
-                if let active = tabs.active {
-                    MarkdownReader(fileURL: active, reloadTick: reloadTick, onRevealInSidebar: revealInSidebar)
-                } else {
-                    EmptyDetail()
+            HStack(spacing: 6) {
+                ForEach(panes.panes) { pane in
+                    WorkspacePane(
+                        pane: pane,
+                        panes: panes,
+                        reloadTick: reloadTick,
+                        onRevealInSidebar: revealInSidebar,
+                        onOpenFiles: { openFiles($0, in: pane, toSide: $1) }
+                    )
                 }
-            }
-            .environment(tabs)
-            // Dropping a file anywhere on the page opens it as a permanent tab, same path as `seshat open`.
-            .dropDestination(for: URL.self) { urls, _ in
-                let files = urls.filter { Library.markdownExtensions.contains($0.pathExtension.lowercased()) }
-                guard !files.isEmpty else { return false }
-                router.handle(urls: files)
-                return true
             }
             // View-scoped shortcuts, the ⌘F pattern; keeps nine ⌘-number items out of the menus.
             .background {
                 ForEach(1...9, id: \.self) { number in
-                    Button("") { tabs.activate(number: number) }
+                    Button("") { panes.focused.activate(number: number) }
                         .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
                 }
-                Button("", action: tabs.activateNext)
+                Button("") { panes.focused.activateNext() }
                     .keyboardShortcut(.tab, modifiers: .control)
-                Button("", action: tabs.activatePrevious)
+                Button("") { panes.focused.activatePrevious() }
                     .keyboardShortcut(.tab, modifiers: [.control, .shift])
-            }
-            // Linear-style inset page: chrome (toolbar + sidebar) is one flat colour, the
-            // document sits in a bordered card with a thin gutter. Shadow on the shape, not
-            // the scroll view, so scrolling never re-rasterises the page.
-            .clipShape(.rect(cornerRadius: 8))
-            .background {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.seshatPaper)
-                    .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.seshatRuleStrong, lineWidth: 0.5)
             }
             .padding([.leading, .bottom, .trailing], 6)   // the toolbar's own inset is the top gap
             .background(Color.seshatSidebarBg)
@@ -98,12 +92,12 @@ struct WorkspaceRoot: View {
         // titlebar: in full screen that patch reads as glass next to the flat toolbar.
         // One opaque colour across the whole toolbar removes the seam.
         .toolbarBackground(Color.seshatSidebarBg, for: .windowToolbar)
-        .focusedSceneValue(\.workspaceTabs, tabs)
+        .focusedSceneValue(\.workspacePanes, panes)
         .onChange(of: router.workspaceRefreshTick) { _, _ in
             refresh()
         }
         .onChange(of: library.folders) { _, _ in
-            tabs.refreshMissing()
+            panes.refreshMissing()
         }
     }
 
@@ -127,7 +121,7 @@ struct WorkspaceRoot: View {
     }
 
     private func revealInSidebar(_ url: URL) {
-        tabs.activate(url)
+        panes.focused.activate(url)
         if let folder = library.folder(containing: url) {
             collapsedFolders.remove(folder.url)
         }
@@ -141,36 +135,32 @@ struct WorkspaceRoot: View {
         NSWorkspace.shared.open(library.rootURL)
     }
 
+    /// Files dropped on a pane open as permanent tabs, there or in the pane beside it. Files
+    /// from outside the library are copied into its Inbox first, the same as `seshat open`.
+    private func openFiles(_ urls: [URL], in pane: WorkspaceTabs, toSide: Bool) {
+        let files = urls.filter { Library.markdownExtensions.contains($0.pathExtension.lowercased()) }
+        guard !files.isEmpty else { return }
+        for file in files {
+            let url = InboxImporter.ensureInLibrary(file, libraryRoot: library.rootURL)
+            if toSide {
+                panes.openToSide(url, of: pane)
+            } else {
+                panes.focus(pane)
+                pane.open(url)
+            }
+        }
+        library.refresh()
+    }
+
     private func handleFileURLChange(from oldURL: URL, to newURL: URL) {
         router.remapReaderFileURL(from: oldURL, to: newURL)
         readState.remap(from: oldURL, to: newURL)
-        tabs.remap(from: oldURL, to: newURL)
+        panes.remap(from: oldURL, to: newURL)
     }
 
     private func handleItemDeleted(_ url: URL) {
         router.closeReaders(for: url)
         readState.forget(url)
-        tabs.closeDeleted(url)
-    }
-}
-
-private struct EmptyDetail: View {
-    var body: some View {
-        VStack(spacing: 18) {
-            SeshatMark(lineWidth: 1.6, color: .seshatFaint)
-                .frame(width: 56, height: 56)
-            VStack(spacing: 8) {
-                Text("No document selected")
-                    .font(.system(size: 16, weight: .medium, design: .serif))
-                    .foregroundStyle(Color.seshatMuted)
-                Text("Pick a file from the sidebar, or use `seshat open <file.md>` from the terminal.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.seshatFaint)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 340)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.seshatPaper)
+        panes.closeDeleted(url)
     }
 }

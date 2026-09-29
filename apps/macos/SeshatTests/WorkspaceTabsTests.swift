@@ -4,19 +4,14 @@ import XCTest
 @MainActor
 final class WorkspaceTabsTests: XCTestCase {
     private var root: URL!
-    private var defaults: UserDefaults!
-    private var suite: String!
 
     override func setUp() async throws {
-        suite = "SeshatTests.WorkspaceTabs.\(UUID().uuidString)"
-        defaults = UserDefaults(suiteName: suite)
         root = FileManager.default.temporaryDirectory
             .appendingPathComponent("seshat-tabs-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
 
     override func tearDown() async throws {
-        defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: root)
     }
 
@@ -32,7 +27,7 @@ final class WorkspaceTabsTests: XCTestCase {
     }
 
     private func make() -> WorkspaceTabs {
-        WorkspaceTabs(defaults: defaults)
+        WorkspaceTabs()
     }
 
     private func names(_ tabs: WorkspaceTabs) -> [String] {
@@ -157,7 +152,6 @@ final class WorkspaceTabsTests: XCTestCase {
         tabs.close(a)
         XCTAssertTrue(tabs.isEmpty)
         XCTAssertNil(tabs.active)
-        XCTAssertNil(defaults.string(forKey: WorkspaceTabs.activeKey))
     }
 
     func testCloseOthersRightAndAll() throws {
@@ -189,47 +183,6 @@ final class WorkspaceTabsTests: XCTestCase {
 
         tabs.closeDeleted(other)
         XCTAssertTrue(tabs.isEmpty)
-    }
-
-    // MARK: Reopen
-
-    func testReopenRestoresMostRecentFirstAtFormerIndex() throws {
-        let a = try file("n", "a.md"), b = try file("n", "b.md"), c = try file("n", "c.md")
-        let tabs = make()
-        tabs.open(a); tabs.open(b); tabs.open(c)
-        tabs.close(b)
-        tabs.close(a)
-        XCTAssertEqual(names(tabs), ["c.md"])
-
-        XCTAssertTrue(tabs.canReopen)
-        tabs.reopenLast()
-        XCTAssertEqual(names(tabs), ["a.md", "c.md"])
-        XCTAssertEqual(tabs.active, a)
-
-        tabs.reopenLast()
-        XCTAssertEqual(names(tabs), ["a.md", "b.md", "c.md"])
-        XCTAssertEqual(tabs.active, b)
-
-        XCTAssertFalse(tabs.canReopen)
-        tabs.reopenLast()
-        XCTAssertEqual(names(tabs), ["a.md", "b.md", "c.md"])
-    }
-
-    func testReopenIndexIsClampedAndDeletedFileReopensMissing() throws {
-        let a = try file("n", "a.md"), b = try file("n", "b.md"), c = try file("n", "c.md")
-        let tabs = make()
-        tabs.open(a); tabs.open(b); tabs.open(c)
-        tabs.close(c)
-        tabs.close(a)
-        tabs.close(b)
-        try FileManager.default.removeItem(at: c)
-
-        tabs.reopenLast()   // b, index 1 clamped to 0
-        XCTAssertEqual(names(tabs), ["b.md"])
-        tabs.reopenLast()   // a at 0
-        tabs.reopenLast()   // c at 2
-        XCTAssertEqual(names(tabs), ["a.md", "b.md", "c.md"])
-        XCTAssertTrue(tabs.isMissing(c))
     }
 
     // MARK: Navigation
@@ -279,7 +232,6 @@ final class WorkspaceTabsTests: XCTestCase {
         tabs.move(from: 1, to: 1)
         tabs.move(from: 7, to: 0)
         XCTAssertEqual(names(tabs), ["a.md", "b.md", "c.md"])
-        XCTAssertEqual(defaults.array(forKey: WorkspaceTabs.tabsKey) as? [String], tabs.tabs.map(\.path))
     }
 
     // MARK: Remap
@@ -342,45 +294,18 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(tabs.missing.isEmpty)
     }
 
-    // MARK: Persistence
+    // MARK: Restoring
 
-    func testPersistenceRoundTrip() throws {
-        let a = try file("n", "a.md"), b = try file("n", "b.md"), c = try file("n", "c.md")
-        let first = make()
-        first.open(a); first.open(b); first.open(c); first.activate(b)
-
-        let second = make()
-        XCTAssertEqual(names(second), ["a.md", "b.md", "c.md"])
-        XCTAssertEqual(second.active, b)
-    }
-
-    func testLoadDropsMissingFilesAndFallsBackToFirstTab() throws {
-        let a = try file("n", "a.md"), b = try file("n", "b.md"), c = try file("n", "c.md")
-        let first = make()
-        first.open(a); first.open(b); first.open(c); first.activate(b)
-        try FileManager.default.removeItem(at: b)
-
-        let second = make()
-        XCTAssertEqual(names(second), ["a.md", "c.md"])
-        XCTAssertEqual(second.active, a)
-    }
-
-    func testLoadDedupesAndIgnoresUnknownActive() throws {
+    func testRestoreDropsMissingFilesAndDuplicatesAndFallsBackToFirstTab() throws {
         let a = try file("n", "a.md"), b = try file("n", "b.md")
-        defaults.set([a.path, b.path, a.path, b.path + "/../b.md"], forKey: WorkspaceTabs.tabsKey)
-        defaults.set(root.appendingPathComponent("nope.md").path, forKey: WorkspaceTabs.activeKey)
-
-        let tabs = make()
+        let gone = root.appendingPathComponent("n/gone.md")
+        let tabs = WorkspaceTabs(
+            paths: [a.path, gone.path, b.path, a.path, b.path + "/../b.md"],
+            active: gone.path
+        )
         XCTAssertEqual(names(tabs), ["a.md", "b.md"])
         XCTAssertEqual(tabs.active, a)
-    }
-
-    func testLoadSurvivesCorruptValues() {
-        defaults.set("not an array", forKey: WorkspaceTabs.tabsKey)
-        defaults.set(42, forKey: WorkspaceTabs.activeKey)
-        let tabs = make()
-        XCTAssertTrue(tabs.isEmpty)
-        XCTAssertNil(tabs.active)
+        XCTAssertEqual(WorkspaceTabs(paths: [a.path, b.path], active: b.path).active, b)
     }
 
     // MARK: Titles

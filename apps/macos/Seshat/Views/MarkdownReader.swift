@@ -6,7 +6,8 @@ import SwiftUI
 struct MarkdownReader: View {
     let fileURL: URL
     var reloadTick: Int = 0
-    var onRevealInSidebar: (URL) -> Void = { _ in }
+    /// With panes side by side, only the focused one owns the toolbar, the menus and ⌘F.
+    var isFocused: Bool = true
 
     @State private var parsed: ParsedMarkdown = .empty
     @State private var rawContent: String = ""
@@ -29,7 +30,6 @@ struct MarkdownReader: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(ReadState.self) private var readState
     @Environment(WorkspaceTabs.self) private var tabs: WorkspaceTabs?   // nil outside the workspace
-    @Environment(AppRouter.self) private var router
 
     private static let outlineMinWidth: CGFloat = 1080
 
@@ -37,36 +37,28 @@ struct MarkdownReader: View {
         reader
         .navigationTitle("")
         .toolbar {
-            // macOS 26 wraps toolbar items in glass pills; Seshat's chrome stays flat.
-            if #available(macOS 26, *) {
-                if let tabs {
-                    ToolbarItem(placement: .navigation) { tabStrip(tabs) }
+            if isFocused {
+                // macOS 26 wraps toolbar items in glass pills; Seshat's chrome stays flat.
+                if #available(macOS 26, *) {
+                    ToolbarItemGroup(placement: .primaryAction) { actions }
                         .sharedBackgroundVisibility(.hidden)
+                } else {
+                    ToolbarItemGroup(placement: .primaryAction) { actions }
                 }
-                ToolbarItemGroup(placement: .primaryAction) { actions }
-                    .sharedBackgroundVisibility(.hidden)
-            } else {
-                if let tabs {
-                    ToolbarItem(placement: .navigation) { tabStrip(tabs) }
-                }
-                ToolbarItemGroup(placement: .primaryAction) { actions }
             }
         }
-        .focusedSceneValue(\.exportPDF, exportAction)
-        .focusedSceneValue(\.printDocument, printAction)
-        .focusedSceneValue(\.copyDocument, copyAction)
+        // A sibling view, so moving focus between panes never rebuilds the page itself.
+        .background {
+            if isFocused {
+                Color.clear
+                    .focusedSceneValue(\.exportPDF, exportAction)
+                    .focusedSceneValue(\.printDocument, printAction)
+                    .focusedSceneValue(\.copyDocument, copyAction)
+            }
+        }
         .task(id: ReaderLoadKey(url: fileURL, tick: reloadTick)) {
             await load()
         }
-    }
-
-    private func tabStrip(_ tabs: WorkspaceTabs) -> some View {
-        WorkspaceTabStrip(
-            tabs: tabs,
-            availableWidth: available.width,
-            onRevealInSidebar: onRevealInSidebar,
-            onDropFiles: { router.handle(urls: $0) }   // same path as `seshat open`: Inbox copy, permanent tab
-        )
     }
 
     private var reader: some View {
@@ -142,9 +134,11 @@ struct MarkdownReader: View {
             }
         }
         .background {
-            Button("", action: toggleSearch)
-                .keyboardShortcut("f", modifiers: .command)
-                .hidden()
+            if isFocused {
+                Button("", action: toggleSearch)
+                    .keyboardShortcut("f", modifiers: .command)
+                    .hidden()
+            }
         }
         .onChange(of: searchQuery) { _, _ in recomputeMatches() }
         .onChange(of: parsed) { _, _ in recomputeMatches() }

@@ -4,11 +4,11 @@ struct WorkspaceScene: Scene {
     static let id = "workspace"
 
     @State private var library = Library()
-    @State private var tabs = WorkspaceTabs()   // owned by the scene, so onboarding and sign-out keep the tabs
+    @State private var panes = WorkspacePanes()   // owned by the scene, so onboarding and sign-out keep the tabs
 
     var body: some Scene {
         Window("Seshat", id: Self.id) {
-            WorkspaceRootContainer(library: library, tabs: tabs)
+            WorkspaceRootContainer(library: library, panes: panes)
                 .frame(minWidth: 760, minHeight: 480)
         }
         .windowToolbarStyle(.unifiedCompact)
@@ -19,7 +19,7 @@ struct WorkspaceScene: Scene {
 
 private struct WorkspaceRootContainer: View {
     let library: Library
-    let tabs: WorkspaceTabs
+    let panes: WorkspacePanes
 
     @Environment(AppRouter.self) private var router
     @Environment(AuthStore.self) private var authStore
@@ -37,7 +37,7 @@ private struct WorkspaceRootContainer: View {
             // install and the library is the one-time onboarding, which can be
             // skipped. Sign-in lives in the Share flow (KER-801).
             if onboardingCompleted {
-                WorkspaceRoot(library: library, tabs: tabs)
+                WorkspaceRoot(library: library, panes: panes)
             } else {
                 OnboardingView()
             }
@@ -65,7 +65,7 @@ private struct WorkspaceRootContainer: View {
         .onChange(of: router.workspaceTarget) { _, target in
             guard let target else { return }
             library.refresh()
-            tabs.open(target)
+            panes.focused.open(target)
             router.workspaceTarget = nil
         }
         .onAppear {
@@ -75,26 +75,26 @@ private struct WorkspaceRootContainer: View {
         }
         .task {
             if let target = router.workspaceTarget {
-                tabs.open(target)
+                panes.focused.open(target)
                 router.workspaceTarget = nil
             }
         }
     }
 
-    /// ⌘W closes the active tab. SwiftUI offers no placement for the system Close item, so the
+    /// ⌘W closes the focused pane's active tab. SwiftUI offers no placement for the system Close item, so the
     /// key is taken here before menu dispatch; with no tab open it falls through and closes
     /// the window as before. Only while the workspace itself is key and showing tabs: another
     /// window (Sparkle, a reader), a sheet, or the onboarding screen leaves the tab alone.
     private func installCloseTabShortcut() {
         guard closeTabMonitor == nil else { return }
-        let tabs = tabs
+        let panes = panes
         closeTabMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
                   event.charactersIgnoringModifiers == "w" else { return event }
             let handled = MainActor.assumeIsolated {
                 guard let window, NSApp.keyWindow === window, window.attachedSheet == nil,
-                      onboardingCompleted, let active = tabs.active else { return false }
-                tabs.close(active)
+                      onboardingCompleted, let active = panes.focused.active else { return false }
+                panes.focused.close(active)
                 return true
             }
             return handled ? nil : event
