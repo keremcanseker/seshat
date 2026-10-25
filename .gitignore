@@ -50,3 +50,13 @@ scripts/.sparkle-tools/
 
 # llvm coverage
 *.profraw
+
+# Internal notes, kept local
+research/
+.claude/
+CLAUDE.md
+docs/
+skills-lock.json
+.playwright-mcp/
+default.profraw
+Seshat-handoff.zip
